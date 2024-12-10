@@ -228,9 +228,22 @@ class VoiceAssistant {
     updateStatus(status, type = 'info') {
         console.log('Status update:', status, type);
         const statusElement = document.getElementById('status');
-        if (statusElement) {
-            statusElement.textContent = status;
-            statusElement.className = `status-text ${type}`;
+        const statusIndicator = document.querySelector('.status-indicator');
+        
+        if (statusElement && statusIndicator) {
+            // Обновляем текст статуса с анимацией
+            statusElement.style.opacity = '0';
+            setTimeout(() => {
+                statusElement.textContent = status;
+                statusElement.className = `status-text ${type}`;
+                statusElement.style.opacity = '1';
+            }, 150);
+
+            // Обновляем класс индикатора
+            statusIndicator.className = 'status-indicator';
+            if (type === 'listening') {
+                statusIndicator.classList.add('listening');
+            }
         }
     }
 
@@ -243,11 +256,14 @@ class VoiceAssistant {
                 return;
             }
 
+            // Создаем новый элемент результата
             const resultElement = document.createElement('div');
             
-            // Определяем тип оповещения на основе статуса
+            // Определяем тип оповещения и иконку
             const alertType = result.status === 'error' ? 'alert-danger' : 'alert-info';
-            resultElement.className = `alert ${alertType} mt-3`;
+            const icon = result.status === 'error' ? 
+                '<i class="fas fa-exclamation-circle"></i>' : 
+                '<i class="fas fa-check-circle"></i>';
             
             // Форматируем тип команды для отображения
             const commandTypeDisplay = {
@@ -259,35 +275,49 @@ class VoiceAssistant {
                 'error': 'Ошибка'
             }[result.command_type] || result.command_type;
 
-            const icon = result.status === 'error' ? 
-                '<i class="fas fa-exclamation-circle text-danger"></i>' : 
-                '<i class="fas fa-check-circle text-success"></i>';
-
+            // Создаем содержимое элемента
             resultElement.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="d-flex align-items-start">
-                        <div class="me-2">${icon}</div>
-                        <div>
-                            <h5 class="mb-2">${commandTypeDisplay}</h5>
-                            <p class="mb-0">${result.result || 'Нет результата'}</p>
-                        </div>
+                <div class="d-flex align-items-start">
+                    ${icon}
+                    <div class="flex-grow-1">
+                        <h5>${commandTypeDisplay}</h5>
+                        <p>${result.result || 'Нет результата'}</p>
+                        <small class="text-muted">${new Date().toLocaleTimeString()}</small>
                     </div>
-                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
                 </div>
             `;
+
+            // Устанавливаем классы для элемента
+            resultElement.className = `alert ${alertType}`;
             
-            resultContainer.prepend(resultElement);
-            
-            // Плавная анимация появления
-            resultElement.style.opacity = '0';
-            setTimeout(() => {
-                resultElement.style.transition = 'opacity 0.3s ease-in';
-                resultElement.style.opacity = '1';
-            }, 10);
-            
-            // Ограничиваем количество отображаемых результатов
-            while (resultContainer.children.length > 10) {
-                resultContainer.removeChild(resultContainer.lastChild);
+            // Добавляем элемент в начало контейнера
+            if (resultContainer.firstChild) {
+                resultContainer.insertBefore(resultElement, resultContainer.firstChild);
+            } else {
+                resultContainer.appendChild(resultElement);
+            }
+
+            // Запускаем анимацию появления
+            // Важно: добавляем класс show в следующем кадре анимации
+            requestAnimationFrame(() => {
+                resultElement.classList.add('show');
+            });
+
+            // Удаляем старые результаты
+            const maxResults = 5; // Ограничиваем количество отображаемых результатов
+            const children = Array.from(resultContainer.children);
+            if (children.length > maxResults) {
+                children.slice(maxResults).forEach(oldResult => {
+                    // Запускаем анимацию исчезновения
+                    oldResult.classList.remove('show');
+                    // Удаляем элемент после завершения анимации
+                    oldResult.addEventListener('transitionend', function handler() {
+                        oldResult.removeEventListener('transitionend', handler);
+                        if (oldResult.parentNode === resultContainer) {
+                            resultContainer.removeChild(oldResult);
+                        }
+                    });
+                });
             }
         } catch (error) {
             console.error('Error displaying result:', error);
