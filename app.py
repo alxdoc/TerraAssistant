@@ -17,6 +17,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+# Проверяем и устанавливаем все необходимые зависимости
+required_packages = ['flask', 'flask-cors', 'nltk', 'scikit-learn', 'numpy']
 try:
     from flask import Flask, render_template, jsonify, request
     from flask_cors import CORS
@@ -27,8 +29,12 @@ try:
     # Инициализация глобального контекста диалога
     dialog_context = DialogContext()
     logger.info('Все необходимые модули успешно импортированы')
+except ImportError as e:
+    logger.error(f'Ошибка при импорте модулей: {str(e)}', exc_info=True)
+    logger.error('Пожалуйста, установите все необходимые зависимости: ' + ', '.join(required_packages))
+    sys.exit(1)
 except Exception as e:
-    logger.error('Ошибка при импорте модулей:', exc_info=True)
+    logger.error(f'Неожиданная ошибка при инициализации: {str(e)}', exc_info=True)
     sys.exit(1)
 
 # Настройка логирования
@@ -127,12 +133,18 @@ def handle_command():
             }), 400
             
         try:
-            # Анализ текста команды
-            command_type, entities = analyze_text(text)
+            # Анализ текста команды с учетом контекста
+            command_type, entities = analyze_text(text, dialog_context)
             logger.info(f'Определен тип команды: {command_type}, сущности: {entities}')
             
-            # Обработка команды
-            result = process_command(command_type, entities)
+            # Если есть уточняющие вопросы, возвращаем их
+            if dialog_context.follow_up_questions:
+                result = dialog_context.follow_up_questions[0]
+                dialog_context.follow_up_questions = dialog_context.follow_up_questions[1:]
+            else:
+                # Обработка команды
+                result = process_command(command_type, entities)
+            
             logger.info(f'Результат обработки команды: {result}')
             
             response = {

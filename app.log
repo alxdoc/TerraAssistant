@@ -149,3 +149,295 @@
  * Running on http://127.0.0.1:5000
  * Running on http://172.31.196.40:5000
 2024-12-10 11:58:19,348 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 11:58:33,133 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 11:58:33] "GET / HTTP/1.1" 200 -
+2024-12-10 11:58:33,555 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 11:58:33] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 11:58:34,999 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 11:58:34] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 11:58:35,328 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 11:58:35] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:04:23,878 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:23] "GET / HTTP/1.1" 200 -
+2024-12-10 12:04:24,803 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:24] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 12:04:24,858 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:24] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 12:04:24,870 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:24] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:04:37,028 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:37] "GET / HTTP/1.1" 200 -
+2024-12-10 12:04:37,426 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:37] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 12:04:37,449 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:37] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 12:04:37,795 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:37] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:04:47,258 - __main__ - DEBUG - Получен новый запрос на обработку команды
+2024-12-10 12:04:47,258 - __main__ - INFO - Получена команда: привет
+2024-12-10 12:04:47,258 - utils.nlp - DEBUG - Анализ текста: привет
+2024-12-10 12:04:47,258 - utils.nlp - DEBUG - Текущий контекст: {'topic': None, 'entities': {}, 'history': [], 'state': 'initial', 'follow_up_questions': []}
+2024-12-10 12:04:47,262 - utils.nlp - DEBUG - Определено намерение: greeting с уверенностью 1.0
+2024-12-10 12:04:47,263 - utils.nlp - DEBUG - Извлеченные сущности: {}
+2024-12-10 12:04:47,263 - utils.nlp - DEBUG - Извлечены сущности: {}
+2024-12-10 12:04:47,263 - __main__ - INFO - Определен тип команды: greeting, сущности: {}
+2024-12-10 12:04:47,263 - utils.command_processor - DEBUG - Обработка команды: greeting с сущностями: {}
+2024-12-10 12:04:47,264 - utils.command_processor - DEBUG - Текущий контекст: {'topic': None, 'entities': {}, 'history': [], 'state': 'initial', 'follow_up_questions': []}
+2024-12-10 12:04:47,338 - utils.command_processor - DEBUG - Команда успешно сохранена в базу данных
+2024-12-10 12:04:47,338 - __main__ - INFO - Результат обработки команды: Добрый день! Как я могу вам помочь?
+2024-12-10 12:04:47,338 - __main__ - DEBUG - Отправка ответа: {'status': 'success', 'command_type': 'greeting', 'result': 'Добрый день! Как я могу вам помочь?', 'timestamp': '2024-12-10T12:04:47.338419'}
+2024-12-10 12:04:47,339 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:04:47] "POST /process_command HTTP/1.1" 200 -
+2024-12-10 12:07:40,828 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:07:40,830 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:07:40,838 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:07:40,838 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:07:40,838 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:07:40,839 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:07:40,839 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:07:40,840 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:07:40,840 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:07:40,840 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:07:40,858 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:07:40,858 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:07:42,078 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:07:42,080 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:07:42,088 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:07:42,088 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:07:42,088 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:07:42,089 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:07:42,089 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:07:42,090 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:07:42,090 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:07:42,090 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:07:42,108 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:07:42,109 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:07:58,260 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:07:58] "GET / HTTP/1.1" 200 -
+2024-12-10 12:07:58,917 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:07:58] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 12:07:59,576 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:07:59] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 12:07:59,901 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:07:59] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:08:53,753 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:08:53,757 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:08:53,771 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:08:53,772 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:08:53,773 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:08:53,774 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:08:53,774 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:08:53,775 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:08:53,775 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:08:53,775 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:08:53,795 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:08:53,795 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:08:55,021 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:08:55,025 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:08:55,038 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:08:55,038 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:08:55,039 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:08:55,039 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:08:55,040 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:08:55,041 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:08:55,041 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:08:55,041 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:08:55,068 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:08:55,068 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:09:13,553 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:09:13] "GET / HTTP/1.1" 200 -
+2024-12-10 12:09:14,259 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:09:14] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 12:09:14,588 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:09:14] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 12:09:14,924 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:09:14] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:10:11,179 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:10:11,181 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:10:11,190 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:10:11,190 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:10:11,190 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:10:11,191 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:10:11,191 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:10:11,192 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:10:11,192 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:10:11,192 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:10:11,202 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:10:11,203 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:10:21,564 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:10:21] "GET / HTTP/1.1" 200 -
+2024-12-10 12:10:22,410 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:10:22] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 12:10:22,845 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:10:22] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 12:10:23,171 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:10:23] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:11:44,649 - __main__ - ERROR - Ошибка при импорте модулей:
+Traceback (most recent call last):
+  File "/home/runner/TerraAssistant/app.py", line 24, in <module>
+    from utils.command_processor import process_command
+  File "/home/runner/TerraAssistant/utils/command_processor.py", line 6, in <module>
+    from utils.nlp import DialogContext
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 221, in <module>
+    dialog_context = DialogContext()
+                     ^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 53, in __init__
+    self.initialize_intent_vectors()
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 91, in initialize_intent_vectors
+    processed_examples = [self.preprocess_text(ex) for ex in examples]
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 91, in <listcomp>
+    processed_examples = [self.preprocess_text(ex) for ex in examples]
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 105, in preprocess_text
+    tokens = word_tokenize(text.lower(), language='russian')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/nltk/tokenize/__init__.py", line 142, in word_tokenize
+    sentences = [text] if preserve_line else sent_tokenize(text, language)
+                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/nltk/tokenize/__init__.py", line 119, in sent_tokenize
+    tokenizer = _get_punkt_tokenizer(language)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/nltk/tokenize/__init__.py", line 105, in _get_punkt_tokenizer
+    return PunktTokenizer(language)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/nltk/tokenize/punkt.py", line 1744, in __init__
+    self.load_lang(lang)
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/nltk/tokenize/punkt.py", line 1749, in load_lang
+    lang_dir = find(f"tokenizers/punkt_tab/{lang}/")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/nltk/data.py", line 579, in find
+    raise LookupError(resource_not_found)
+LookupError: 
+**********************************************************************
+  Resource [93mpunkt_tab[0m not found.
+  Please use the NLTK Downloader to obtain the resource:
+
+  [31m>>> import nltk
+  >>> nltk.download('punkt_tab')
+  [0m
+  For more information see: https://www.nltk.org/data.html
+
+  Attempted to load [93mtokenizers/punkt_tab/russian/[0m
+
+  Searched in:
+    - '/home/runner/nltk_data'
+    - '/home/runner/TerraAssistant/.pythonlibs/nltk_data'
+    - '/home/runner/TerraAssistant/.pythonlibs/share/nltk_data'
+    - '/home/runner/TerraAssistant/.pythonlibs/lib/nltk_data'
+    - '/usr/share/nltk_data'
+    - '/usr/local/share/nltk_data'
+    - '/usr/lib/nltk_data'
+    - '/usr/local/lib/nltk_data'
+**********************************************************************
+
+2024-12-10 12:12:21,611 - utils.nlp - INFO - Компонент NLTK punkt уже установлен
+2024-12-10 12:12:21,611 - utils.nlp - INFO - Компонент NLTK stopwords уже установлен
+2024-12-10 12:12:21,611 - utils.nlp - INFO - Загрузка компонента NLTK averaged_perceptron_tagger
+2024-12-10 12:12:22,012 - utils.nlp - INFO - Загрузка компонента NLTK universal_tagset
+2024-12-10 12:12:22,415 - utils.nlp - INFO - Русские стоп-слова успешно загружены
+2024-12-10 12:12:22,417 - __main__ - ERROR - Ошибка при импорте модулей:
+Traceback (most recent call last):
+  File "/home/runner/TerraAssistant/app.py", line 24, in <module>
+    from utils.command_processor import process_command
+  File "/home/runner/TerraAssistant/utils/command_processor.py", line 6, in <module>
+    from utils.nlp import DialogContext
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 257, in <module>
+    dialog_context = DialogContext()
+                     ^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 68, in __init__
+    self.initialize_intent_vectors()
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 109, in initialize_intent_vectors
+    self.vectorizer.fit(all_examples)
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/sklearn/base.py", line 1382, in wrapper
+    estimator._validate_params()
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/sklearn/base.py", line 436, in _validate_params
+    validate_parameter_constraints(
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/sklearn/utils/_param_validation.py", line 98, in validate_parameter_constraints
+    raise InvalidParameterError(
+sklearn.utils._param_validation.InvalidParameterError: The 'stop_words' parameter of TfidfVectorizer must be a str among {'english'}, an instance of 'list' or None. Got {'опять', 'меня', 'была', 'впрочем', 'будто', 'три', 'этого', 'конечно', 'быть', 'иногда', 'во', 'но', 'раз', 'был', 'здесь', 'хоть', 'ты', 'всегда', 'наконец', 'их', 'у', 'между', 'ведь', 'со', 'за', 'эти', 'про', 'под', 'себя', 'надо', 'том', 'над', 'с', 'теперь', 'бы', 'этой', 'его', 'того', 'то', 'можно', 'ни', 'вам', 'кто', 'свою', 'на', 'были', 'ж', 'через', 'она', 'тогда', 'же', 'в', 'ее', 'ему', 'есть', 'при', 'потому', 'другой', 'без', 'от', 'будет', 'этот', 'ну', 'всего', 'не', 'чуть', 'такой', 'и', 'об', 'какой', 'них', 'даже', 'моя', 'нибудь', 'мне', 'совсем', 'ей', 'им', 'для', 'что', 'где', 'вас', 'чего', 'тебя', 'один', 'он', 'какая', 'нет', 'сейчас', 'ничего', 'все', 'никогда', 'вы', 'вдруг', 'более', 'к', 'тем', 'два', 'хорошо', 'этом', 'если', 'из', 'может', 'много', 'почти', 'до', 'ним', 'после', 'да', 'как', 'так', 'еще', 'него', 'там', 'чтобы', 'нее', 'потом', 'ней', 'я', 'разве', 'чем', 'зачем', 'мы', 'они', 'нас', 'только', 'а', 'тоже', 'больше', 'лучше', 'эту', 'вот', 'по', 'уж', 'было', 'чтоб', 'нельзя', 'перед', 'когда', 'всех', 'или', 'себе', 'ли', 'сам', 'уже', 'о', 'всю', 'мой', 'куда', 'тут', 'тот'} instead.
+2024-12-10 12:12:41,615 - utils.nlp - INFO - Компонент NLTK punkt уже установлен
+2024-12-10 12:12:41,615 - utils.nlp - INFO - Компонент NLTK stopwords уже установлен
+2024-12-10 12:12:41,615 - utils.nlp - INFO - Компонент NLTK averaged_perceptron_tagger уже установлен
+2024-12-10 12:12:41,615 - utils.nlp - INFO - Компонент NLTK universal_tagset уже установлен
+2024-12-10 12:12:41,616 - utils.nlp - INFO - Русские стоп-слова успешно загружены
+2024-12-10 12:12:41,617 - __main__ - ERROR - Ошибка при импорте модулей:
+Traceback (most recent call last):
+  File "/home/runner/TerraAssistant/app.py", line 24, in <module>
+    from utils.command_processor import process_command
+  File "/home/runner/TerraAssistant/utils/command_processor.py", line 6, in <module>
+    from utils.nlp import DialogContext
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 273, in <module>
+    dialog_context = DialogContext()
+                     ^^^^^^^^^^^^^^^
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 84, in __init__
+    self.initialize_intent_vectors()
+  File "/home/runner/TerraAssistant/utils/nlp.py", line 125, in initialize_intent_vectors
+    self.vectorizer.fit(all_examples)
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/sklearn/base.py", line 1382, in wrapper
+    estimator._validate_params()
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/sklearn/base.py", line 436, in _validate_params
+    validate_parameter_constraints(
+  File "/home/runner/TerraAssistant/.pythonlibs/lib/python3.11/site-packages/sklearn/utils/_param_validation.py", line 98, in validate_parameter_constraints
+    raise InvalidParameterError(
+sklearn.utils._param_validation.InvalidParameterError: The 'stop_words' parameter of TfidfVectorizer must be a str among {'english'}, an instance of 'list' or None. Got {'ей', 'опять', 'он', 'было', 'что', 'вот', 'чтоб', 'можно', 'того', 'этот', 'много', 'другой', 'хорошо', 'был', 'куда', 'один', 'бы', 'сам', 'этого', 'к', 'ним', 'ни', 'иногда', 'из', 'до', 'всю', 'два', 'вас', 'не', 'во', 'нибудь', 'ну', 'тот', 'наконец', 'эти', 'почти', 'никогда', 'нельзя', 'впрочем', 'вам', 'про', 'так', 'еще', 'их', 'него', 'ли', 'всех', 'через', 'перед', 'уже', 'тоже', 'здесь', 'раз', 'эту', 'ему', 'да', 'вы', 'чтобы', 'быть', 'разве', 'всегда', 'в', 'с', 'себе', 'мы', 'для', 'у', 'чего', 'на', 'этой', 'над', 'совсем', 'между', 'всего', 'себя', 'нас', 'когда', 'конечно', 'надо', 'будто', 'тебя', 'кто', 'то', 'ничего', 'о', 'хоть', 'какой', 'них', 'более', 'все', 'под', 'потом', 'как', 'мне', 'какая', 'может', 'ведь', 'нет', 'зачем', 'ней', 'при', 'меня', 'такой', 'нее', 'потому', 'где', 'сейчас', 'уж', 'тогда', 'ты', 'три', 'по', 'вдруг', 'лучше', 'даже', 'и', 'тут', 'чем', 'этом', 'они', 'я', 'будет', 'там', 'же', 'если', 'больше', 'а', 'без', 'или', 'была', 'том', 'за', 'моя', 'его', 'теперь', 'есть', 'были', 'ее', 'им', 'ж', 'чуть', 'она', 'об', 'после', 'со', 'от', 'только', 'но', 'мой', 'свою', 'тем'} instead.
+2024-12-10 12:13:03,816 - utils.nlp - INFO - Компонент NLTK punkt уже установлен
+2024-12-10 12:13:03,818 - utils.nlp - INFO - Компонент NLTK stopwords уже установлен
+2024-12-10 12:13:03,818 - utils.nlp - INFO - Компонент NLTK averaged_perceptron_tagger уже установлен
+2024-12-10 12:13:03,818 - utils.nlp - INFO - Компонент NLTK universal_tagset уже установлен
+2024-12-10 12:13:03,820 - utils.nlp - INFO - Русские стоп-слова успешно загружены
+2024-12-10 12:13:03,842 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:13:03,846 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:13:03,872 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:13:03,872 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:13:03,873 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:13:03,874 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:13:03,875 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:13:03,876 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:13:03,876 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:13:03,876 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:13:03,897 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:13:03,898 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:13:30,144 - utils.nlp - INFO - Компонент NLTK punkt уже установлен
+2024-12-10 12:13:30,145 - utils.nlp - INFO - Компонент NLTK stopwords уже установлен
+2024-12-10 12:13:30,145 - utils.nlp - INFO - Компонент NLTK averaged_perceptron_tagger уже установлен
+2024-12-10 12:13:30,146 - utils.nlp - INFO - Компонент NLTK universal_tagset уже установлен
+2024-12-10 12:13:30,147 - utils.nlp - INFO - Русские стоп-слова успешно загружены
+2024-12-10 12:13:30,166 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:13:30,168 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:13:30,179 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:13:30,179 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:13:30,179 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:13:30,180 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:13:30,180 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:13:30,181 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:13:30,181 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:13:30,181 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:13:30,200 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:13:30,201 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-12-10 12:13:43,699 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:13:43] "GET / HTTP/1.1" 200 -
+2024-12-10 12:13:44,055 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:13:44] "[36mGET /static/css/custom.css HTTP/1.1[0m" 304 -
+2024-12-10 12:13:44,740 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:13:44] "[36mGET /static/js/commands.js HTTP/1.1[0m" 304 -
+2024-12-10 12:13:45,068 - werkzeug - INFO - 172.31.196.40 - - [10/Dec/2024 12:13:45] "[36mGET /static/js/voice.js HTTP/1.1[0m" 304 -
+2024-12-10 12:14:00,501 - utils.nlp - INFO - Компонент NLTK punkt уже установлен
+2024-12-10 12:14:00,502 - utils.nlp - INFO - Компонент NLTK stopwords уже установлен
+2024-12-10 12:14:00,502 - utils.nlp - INFO - Компонент NLTK averaged_perceptron_tagger уже установлен
+2024-12-10 12:14:00,503 - utils.nlp - INFO - Компонент NLTK universal_tagset уже установлен
+2024-12-10 12:14:00,503 - utils.nlp - INFO - Русские стоп-слова успешно загружены
+2024-12-10 12:14:00,504 - utils.nlp - INFO - Загружено 151 стоп-слов для русского языка
+2024-12-10 12:14:00,513 - utils.nlp - INFO - NLP компоненты успешно инициализированы
+2024-12-10 12:14:00,514 - utils.nlp - INFO - Загружено 151 стоп-слов для русского языка
+2024-12-10 12:14:00,520 - utils.nlp - INFO - NLP компоненты успешно инициализированы
+2024-12-10 12:14:00,522 - utils.nlp - INFO - Загружено 151 стоп-слов для русского языка
+2024-12-10 12:14:00,528 - utils.nlp - INFO - NLP компоненты успешно инициализированы
+2024-12-10 12:14:00,528 - __main__ - INFO - Все необходимые модули успешно импортированы
+2024-12-10 12:14:00,529 - __main__ - INFO - Директория для базы данных создана: /home/runner/TerraAssistant/instance
+2024-12-10 12:14:00,545 - __main__ - INFO - Запуск приложения...
+2024-12-10 12:14:00,546 - __main__ - DEBUG - Начало инициализации базы данных...
+2024-12-10 12:14:00,546 - __main__ - DEBUG - Проверка соединения с базой данных...
+2024-12-10 12:14:00,547 - __main__ - DEBUG - Соединение с базой данных успешно
+2024-12-10 12:14:00,547 - __main__ - DEBUG - Создание всех таблиц...
+2024-12-10 12:14:00,548 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:14:00,548 - __main__ - INFO - База данных успешно инициализирована
+2024-12-10 12:14:00,548 - __main__ - INFO - Запуск Flask сервера на порту 5000...
+2024-12-10 12:14:00,560 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.196.40:5000
+2024-12-10 12:14:00,560 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
