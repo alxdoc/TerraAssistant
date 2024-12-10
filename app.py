@@ -12,43 +12,71 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Инициализация Flask приложения
-app = Flask(__name__)
+def create_app():
+    try:
+        # Инициализация Flask приложения
+        app = Flask(__name__)
+        
+        # Конфигурация базы данных
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        app.config.update(
+            SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "terra_assistant_key"),
+            SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(basedir, 'terra.db')}",
+            SQLALCHEMY_TRACK_MODIFICATIONS=False
+        )
+        
+        # Инициализация базы данных
+        db.init_app(app)
+        logger.info("База данных успешно инициализирована")
 
-# Конфигурация базы данных
-basedir = os.path.abspath(os.path.dirname(__file__))
-app.config.update(
-    SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "terra_assistant_key"),
-    SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(basedir, 'terra.db')}",
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
-)
+        # Маршруты
+        @app.route('/')
+        def index():
+            try:
+                logger.debug('Обработка запроса к главной странице')
+                return render_template('index.html')
+            except Exception as e:
+                logger.error(f'Ошибка при обработке главной страницы: {e}')
+                return 'Internal Server Error', 500
 
-# Инициализация базы данных
-db.init_app(app)
+        @app.route('/process_command', methods=['POST'])
+        def handle_command():
+            try:
+                logger.debug('Получен POST запрос к /process_command')
+                text = request.json.get('text', '')
+                logger.debug(f'Текст команды: {text}')
+                
+                # Анализ текста команды
+                command_type, entities = analyze_text(text)
+                logger.debug(f'Тип команды: {command_type}, сущности: {entities}')
+                
+                # Обработка команды
+                result = process_command(command_type, entities)
+                logger.debug(f'Результат обработки: {result}')
+                
+                return jsonify({
+                    'status': 'success',
+                    'command_type': command_type,
+                    'result': result
+                })
+            except Exception as e:
+                logger.error(f'Ошибка при обработке команды: {e}')
+                return jsonify({
+                    'status': 'error',
+                    'error': str(e)
+                }), 500
 
-# Логирование успешной инициализации
-logger.info('Flask application initialized successfully')
+        # Создание таблиц базы данных
+        with app.app_context():
+            db.create_all()
+            logger.info('База данных инициализирована')
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+        logger.info('Flask приложение успешно создано')
+        return app
 
-@app.route('/process_command', methods=['POST'])
-def handle_command():
-    text = request.json.get('text', '')
-    
-    # Analyze the command text
-    command_type, entities = analyze_text(text)
-    
-    # Process the command and get results
-    result = process_command(command_type, entities)
-    
-    return jsonify({
-        'status': 'success',
-        'command_type': command_type,
-        'result': result
-    })
+    except Exception as e:
+        logger.error(f'Ошибка при создании приложения: {e}')
+        raise
 
-# Создание таблиц базы данных
-with app.app_context():
-    db.create_all()
+# Создание экземпляра приложения
+app = create_app()
