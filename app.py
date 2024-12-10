@@ -6,6 +6,12 @@ from models import init_db, Command, db
 from utils.command_processor import process_command
 from utils.nlp import analyze_text, DialogContext
 
+# Настройка базового логирования
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 # Настройка логирования
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
