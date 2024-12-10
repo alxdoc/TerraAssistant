@@ -72,6 +72,14 @@ class VoiceAssistant {
             this.updateStatus('Слушаю...', 'listening');
             document.getElementById('startBtn').classList.add('listening');
             document.getElementById('stopBtn').disabled = false;
+            
+            // Добавляем таймаут для автоматической остановки
+            setTimeout(() => {
+                if (this.isListening) {
+                    console.log('Auto-stopping recognition after timeout');
+                    this.stop();
+                }
+            }, 10000); // 10 секунд на распознавание
         };
 
         this.recognition.onend = () => {
@@ -88,23 +96,52 @@ class VoiceAssistant {
         };
 
         this.recognition.onresult = (event) => {
-            console.log('Got recognition result');
-            const text = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-            console.log('Recognized text:', text);
-            this.processVoiceInput(text);
+            try {
+                console.log('Got recognition result:', event);
+                if (event.results && event.results.length > 0) {
+                    const result = event.results[event.results.length - 1];
+                    if (result.isFinal) {
+                        const text = result[0].transcript.trim().toLowerCase();
+                        console.log('Recognized text:', text);
+                        if (text) {
+                            this.processVoiceInput(text);
+                        } else {
+                            console.error('Empty recognition result');
+                            this.updateStatus('Не удалось распознать речь', 'error');
+                        }
+                    }
+                } else {
+                    console.error('No results in recognition event');
+                    this.updateStatus('Не удалось распознать речь', 'error');
+                }
+            } catch (error) {
+                console.error('Error processing recognition result:', error);
+                this.updateStatus('Ошибка обработки распознанной речи', 'error');
+            }
         };
 
         this.recognition.onerror = (event) => {
-            console.error('Recognition error:', event.error);
+            console.error('Recognition error:', event.error, event);
             this.isListening = false;
             
-            if (event.error === 'not-allowed') {
-                this.hasPermission = false;
-                this.updateStatus('Нет доступа к микрофону', 'error');
-            } else {
-                this.updateStatus(`Ошибка: ${event.error}`, 'error');
+            let errorMessage = 'Ошибка распознавания речи';
+            
+            switch(event.error) {
+                case 'not-allowed':
+                    this.hasPermission = false;
+                    errorMessage = 'Нет доступа к микрофону';
+                    break;
+                case 'no-speech':
+                    errorMessage = 'Речь не обнаружена';
+                    break;
+                case 'network':
+                    errorMessage = 'Проблема с сетью';
+                    break;
+                default:
+                    errorMessage = `Ошибка: ${event.error}`;
             }
             
+            this.updateStatus(errorMessage, 'error');
             document.getElementById('startBtn').classList.remove('listening');
             document.getElementById('stopBtn').disabled = true;
         };
@@ -265,9 +302,12 @@ class VoiceAssistant {
             // Создаем новый элемент результата
             const resultElement = document.createElement('div');
             
+            // Определяем статус результата
+            const isError = result.status === 'error' || result.error;
+            
             // Определяем тип оповещения и иконку
-            const alertType = result.status === 'error' ? 'alert-danger' : 'alert-info';
-            const icon = result.status === 'error' ? 
+            const alertType = isError ? 'alert-danger' : 'alert-info';
+            const icon = isError ? 
                 '<i class="fas fa-exclamation-circle"></i>' : 
                 '<i class="fas fa-check-circle"></i>';
             
@@ -279,7 +319,12 @@ class VoiceAssistant {
                 'report': 'Отчёт',
                 'unknown': 'Неизвестная команда',
                 'error': 'Ошибка'
-            }[result.command_type] || result.command_type;
+            }[result.command_type] || 'Команда';
+
+            // Определяем текст результата
+            let resultText = isError ? 
+                (result.error || 'Произошла ошибка при выполнении команды') :
+                (result.result || 'Нет результата');
 
             // Создаем содержимое элемента
             resultElement.innerHTML = `
@@ -287,7 +332,7 @@ class VoiceAssistant {
                     ${icon}
                     <div class="flex-grow-1">
                         <h5>${commandTypeDisplay}</h5>
-                        <p>${result.result || 'Нет результата'}</p>
+                        <p>${resultText}</p>
                         <small class="text-muted">${new Date().toLocaleTimeString()}</small>
                     </div>
                 </div>

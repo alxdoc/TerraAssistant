@@ -3,66 +3,40 @@ import logging
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-from models import db, Command, Task  # Добавляем импорт моделей
+from models import db, Command, Task
 from utils.command_processor import process_command
 from utils.nlp import analyze_text
 
-# Настройка логирования для отладки
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Создание и настройка приложения
+app = Flask(__name__)
 
-# Настройка логирования для отладки
+# Настройка логирования
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Создание и настройка приложения
-app = Flask(__name__)
-logger.info("Инициализация Flask приложения...")
-
 # Конфигурация CORS
-CORS(app, resources={r"/*": {"origins": "*"}})
-logger.info("CORS настроен для всех маршрутов")
+CORS(app)
 
 # Конфигурация базы данных
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "terra_assistant_key"),
     SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(basedir, 'terra.db')}",
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    TEMPLATES_AUTO_RELOAD=True
 )
-logger.info("Конфигурация базы данных завершена")
 
 # Инициализация базы данных
 db.init_app(app)
 
 def init_db():
     """Инициализация базы данных"""
-    try:
-        logger.info('Начало инициализации базы данных...')
-        with app.app_context():
-            # Проверяем существование таблиц
-            logger.debug('Проверка существующих таблиц...')
-            inspector = db.inspect(db.engine)
-            existing_tables = inspector.get_table_names()
-            logger.debug(f'Существующие таблицы: {existing_tables}')
-            
-            # Создаем таблицы
-            logger.debug('Создание таблиц...')
-            db.create_all()
-            
-            # Проверяем созданные таблицы
-            new_tables = inspector.get_table_names()
-            logger.debug(f'Таблицы после создания: {new_tables}')
-            
-            logger.info('База данных успешно инициализирована')
-    except Exception as e:
-        logger.error(f'Ошибка при инициализации базы данных: {e}', exc_info=True)
-        raise
+    with app.app_context():
+        db.create_all()
+        logger.info('База данных успешно инициализирована')
 
 @app.route('/')
 def index():

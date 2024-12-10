@@ -11,6 +11,8 @@ def process_command(command_type: str, entities: Dict) -> str:
     Обрабатывает команду определенного типа и возвращает результат
     """
     try:
+        logger.debug(f"Начало обработки команды типа {command_type} с сущностями: {entities}")
+        
         if command_type == 'task_creation':
             result = create_task(entities)
         elif command_type == 'document_analysis':
@@ -20,17 +22,25 @@ def process_command(command_type: str, entities: Dict) -> str:
         elif command_type == 'report':
             result = generate_report()
         else:
+            logger.warning(f"Получен неизвестный тип команды: {command_type}")
             result = "Команда не распознана"
             
         if not result:
+            logger.warning("Получен пустой результат выполнения команды")
             result = "Команда выполнена, но результат пуст"
+            
+        logger.debug(f"Команда успешно обработана. Результат: {result}")
+        
     except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.error(f"Ошибка при обработке команды {command_type}: {str(e)}")
+        logger.error(f"Ошибка при обработке команды {command_type}: {str(e)}", exc_info=True)
         result = f"Произошла ошибка при выполнении команды: {str(e)}"
     
-    # Сохраняем команду в базу данных
-    save_command(command_type, result)
+    try:
+        # Сохраняем команду в базу данных
+        save_command(command_type, result)
+        logger.debug("Команда успешно сохранена в базу данных")
+    except Exception as e:
+        logger.error(f"Ошибка при сохранении команды в базу данных: {str(e)}", exc_info=True)
     
     return result
 
