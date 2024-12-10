@@ -1,22 +1,52 @@
 class VoiceAssistant {
     constructor() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            this.updateStatus('Ваш браузер не поддерживает распознавание речи');
+            return;
+        }
+        
         this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         this.recognition.lang = 'ru-RU';
         this.recognition.continuous = true;
         this.recognition.interimResults = false;
         this.isListening = false;
+        this.hasPermission = false;
         this.setupRecognition();
+        this.checkMicrophonePermission();
+    }
+
+    async checkMicrophonePermission() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+            this.hasPermission = true;
+            this.updateStatus('Готов к работе');
+        } catch (error) {
+            console.error('Ошибка доступа к микрофону:', error);
+            this.hasPermission = false;
+            this.updateStatus('Нет доступа к микрофону');
+        }
     }
 
     setupRecognition() {
         this.recognition.onstart = () => {
             this.updateStatus('Слушаю...');
             this.isListening = true;
+            document.getElementById('startBtn').classList.add('listening');
         };
 
         this.recognition.onend = () => {
-            if (this.isListening) {
-                this.recognition.start();
+            document.getElementById('startBtn').classList.remove('listening');
+            if (this.isListening && this.hasPermission) {
+                setTimeout(() => {
+                    try {
+                        this.recognition.start();
+                    } catch (error) {
+                        console.error('Ошибка перезапуска распознавания:', error);
+                        this.isListening = false;
+                        this.updateStatus('Ошибка распознавания');
+                    }
+                }, 100);
             }
         };
 
@@ -26,21 +56,44 @@ class VoiceAssistant {
         };
 
         this.recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            this.updateStatus('Ошибка распознавания');
+            console.error('Ошибка распознавания речи:', event.error);
+            if (event.error === 'not-allowed') {
+                this.hasPermission = false;
+                this.isListening = false;
+                this.updateStatus('Нет доступа к микрофону');
+            } else {
+                this.updateStatus(`Ошибка: ${event.error}`);
+            }
         };
-    }
 
-    start() {
-        if (!this.isListening) {
-            this.recognition.start();
+    async start() {
+        if (!this.hasPermission) {
+            await this.checkMicrophonePermission();
+        }
+        
+        if (this.hasPermission && !this.isListening) {
+            try {
+                await this.recognition.start();
+                this.updateStatus('Слушаю...');
+            } catch (error) {
+                console.error('Ошибка запуска распознавания:', error);
+                this.updateStatus('Ошибка запуска. Попробуйте перезагрузить страницу');
+                this.isListening = false;
+            }
+        } else if (!this.hasPermission) {
+            this.updateStatus('Пожалуйста, разрешите доступ к микрофону');
         }
     }
 
     stop() {
         this.isListening = false;
-        this.recognition.stop();
-        this.updateStatus('Ожидание');
+        try {
+            this.recognition.stop();
+            this.updateStatus('Ожидание');
+            document.getElementById('startBtn').classList.remove('listening');
+        } catch (error) {
+            console.error('Ошибка остановки распознавания:', error);
+        }
     }
 
     processVoiceInput(text) {
