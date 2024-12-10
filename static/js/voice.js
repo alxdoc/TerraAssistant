@@ -166,8 +166,10 @@ class VoiceAssistant {
             const command = text.toLowerCase().replace('терра', '').trim();
             if (command) {
                 console.log('Valid command detected:', command);
+                const commandType = detectCommandType(command);
+                console.log('Detected command type:', commandType);
                 this.updateStatus('Обработка команды...', 'processing');
-                this.executeCommand(command);
+                this.executeCommand(command, commandType);
             } else {
                 console.log('Empty command after keyword');
                 this.updateStatus('Команда не распознана', 'error');
@@ -182,8 +184,9 @@ class VoiceAssistant {
         }
     }
 
-    async executeCommand(command) {
+    async executeCommand(command, commandType) {
         console.log('Executing command:', command);
+        console.log('Command type:', commandType);
         try {
             this.updateStatus('Отправка команды...', 'processing');
             console.log('Sending request to server...');
@@ -193,7 +196,10 @@ class VoiceAssistant {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ text: command })
+                body: JSON.stringify({ 
+                    text: command,
+                    command_type: commandType
+                })
             });
             
             console.log('Server response status:', response.status);

@@ -1,21 +1,33 @@
+import logging
 from typing import Dict
 from datetime import datetime
 from models import db, Command, Task
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 def process_command(command_type: str, entities: Dict) -> str:
     """
     Обрабатывает команду определенного типа и возвращает результат
     """
-    result = "Команда не распознана"
-    
-    if command_type == 'task_creation':
-        result = create_task(entities)
-    elif command_type == 'document_analysis':
-        result = analyze_document(entities)
-    elif command_type == 'search':
-        result = perform_search(entities)
-    elif command_type == 'report':
-        result = generate_report()
+    try:
+        if command_type == 'task_creation':
+            result = create_task(entities)
+        elif command_type == 'document_analysis':
+            result = analyze_document(entities)
+        elif command_type == 'search':
+            result = perform_search(entities)
+        elif command_type == 'report':
+            result = generate_report()
+        else:
+            result = "Команда не распознана"
+            
+        if not result:
+            result = "Команда выполнена, но результат пуст"
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Ошибка при обработке команды {command_type}: {str(e)}")
+        result = f"Произошла ошибка при выполнении команды: {str(e)}"
     
     # Сохраняем команду в базу данных
     save_command(command_type, result)

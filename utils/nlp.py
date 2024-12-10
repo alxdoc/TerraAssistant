@@ -30,25 +30,82 @@ def analyze_text(text: str) -> Tuple[str, Dict]:
 def extract_entities(text: str, command_type: str) -> Dict:
     """
     Извлекает сущности из текста команды в зависимости от её типа
+    с расширенной обработкой контекста
     """
     entities = {}
+    text = text.lower()
     
     if command_type == 'task_creation':
-        # Поиск описания задачи
-        description_match = re.search(r'задач[уа]\s+(.+)', text)
-        if description_match:
-            entities['description'] = description_match.group(1)
+        # Расширенный поиск описания задачи
+        description_patterns = [
+            r'задач[уа]\s+(.+)',
+            r'создать\s+(.+)',
+            r'добавить\s+(.+)',
+            r'запланировать\s+(.+)',
+            r'назначить\s+(.+)'
+        ]
+        
+        for pattern in description_patterns:
+            match = re.search(pattern, text)
+            if match:
+                description = match.group(1)
+                # Удаляем лишние слова-триггеры из описания
+                description = re.sub(r'^(задачу|заявку|работу)\s+', '', description)
+                entities['description'] = description
+                break
+                
+        # Поиск приоритета
+        if any(word in text for word in ['срочно', 'важно', 'критично']):
+            entities['priority'] = 'high'
+        elif any(word in text for word in ['не срочно', 'потом', 'когда будет время']):
+            entities['priority'] = 'low'
+        else:
+            entities['priority'] = 'normal'
     
     elif command_type == 'document_analysis':
-        # Поиск типа документа
-        doc_type_match = re.search(r'(документ|договор|смет[уа])', text)
-        if doc_type_match:
-            entities['document_type'] = doc_type_match.group(1)
+        # Расширенный поиск типа документа
+        doc_patterns = {
+            'contract': r'(договор|контракт|соглашение)',
+            'report': r'(отчет|справк[аи]|выписк[аи])',
+            'invoice': r'(счет|счет-фактур[аы]|накладн[ая][яу])',
+            'other': r'(документ|файл|бумаг[аи])'
+        }
+        
+        for doc_type, pattern in doc_patterns.items():
+            if re.search(pattern, text):
+                entities['document_type'] = doc_type
+                break
+                
+        # Поиск дополнительных параметров
+        if re.search(r'за\s+(\d{4})\s*год', text):
+            entities['year'] = re.search(r'за\s+(\d{4})\s*год', text).group(1)
     
     elif command_type == 'search':
-        # Поиск критериев поиска
-        search_match = re.search(r'(найти|поиск|искать)\s+(.+)', text)
-        if search_match:
-            entities['search_query'] = search_match.group(2)
+        # Улучшенный поиск критериев
+        search_patterns = [
+            r'найти\s+(.+)',
+            r'поиск\s+(.+)',
+            r'искать\s+(.+)',
+            r'где\s+(.+)',
+            r'информаци[яю]\s+о\s+(.+)'
+        ]
+        
+        for pattern in search_patterns:
+            match = re.search(pattern, text)
+            if match:
+                entities['search_query'] = match.group(1)
+                break
+                
+        # Определение категории поиска
+        categories = {
+            'person': r'(человек|сотрудник|работник)',
+            'document': r'(документ|файл|договор)',
+            'task': r'(задач|заявк|работ)'
+        }
+        
+        for category, pattern in categories.items():
+            if re.search(pattern, text):
+                entities['category'] = category
+                break
     
     return entities
