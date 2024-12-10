@@ -1,9 +1,14 @@
 class VoiceAssistant {
     constructor() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            console.error('Speech Recognition API not supported');
             this.updateStatus('Ваш браузер не поддерживает распознавание речи');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
             return;
         }
+        console.log('Speech Recognition API supported');
         
         this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         this.recognition.lang = 'ru-RU';
@@ -67,12 +72,17 @@ class VoiceAssistant {
         };
 
     async start() {
+        console.log('Starting voice recognition...');
+        console.log('Current state:', { hasPermission: this.hasPermission, isListening: this.isListening });
+        
         if (!this.hasPermission) {
+            console.log('Requesting microphone permission...');
             await this.checkMicrophonePermission();
         }
         
         if (this.hasPermission && !this.isListening) {
             try {
+                console.log('Starting recognition service...');
                 await this.recognition.start();
                 this.updateStatus('Слушаю...');
             } catch (error) {
@@ -81,7 +91,10 @@ class VoiceAssistant {
                 this.isListening = false;
             }
         } else if (!this.hasPermission) {
+            console.log('No microphone permission');
             this.updateStatus('Пожалуйста, разрешите доступ к микрофону');
+        } else {
+            console.log('Recognition already active');
         }
     }
 
@@ -142,13 +155,34 @@ class VoiceAssistant {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing Voice Assistant...');
     const assistant = new VoiceAssistant();
     
-    document.getElementById('startBtn').addEventListener('click', () => {
-        assistant.start();
+    const startButton = document.getElementById('startBtn');
+    const stopButton = document.getElementById('stopBtn');
+    
+    if (!startButton || !stopButton) {
+        console.error('Could not find microphone buttons');
+        return;
+    }
+    
+    startButton.addEventListener('click', async () => {
+        console.log('Start button clicked');
+        try {
+            await assistant.start();
+        } catch (error) {
+            console.error('Error starting recognition:', error);
+        }
     });
     
-    document.getElementById('stopBtn').addEventListener('click', () => {
-        assistant.stop();
+    stopButton.addEventListener('click', () => {
+        console.log('Stop button clicked');
+        try {
+            assistant.stop();
+        } catch (error) {
+            console.error('Error stopping recognition:', error);
+        }
     });
+    
+    console.log('Voice Assistant initialized');
 });
