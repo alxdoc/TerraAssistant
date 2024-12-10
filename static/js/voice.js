@@ -6,13 +6,22 @@ class VoiceAssistant {
         
         try {
             // Проверяем поддержку Web Speech API
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.error('Speech Recognition API не поддерживается');
                 throw new Error('Speech Recognition API не поддерживается в этом браузере');
             }
             
-            // Инициализируем распознавание речи
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            console.log('Speech Recognition API supported, initializing...');
+            console.log('Speech Recognition API поддерживается, инициализация...');
+            
+            // Создаем экземпляр распознавания речи
+            this.recognition = new SpeechRecognition();
+            
+            if (!this.recognition) {
+                throw new Error('Не удалось создать экземпляр распознавания речи');
+            }
+            
+            console.log('Recognition instance created successfully');
             
             this.recognition = new SpeechRecognition();
             
@@ -323,12 +332,31 @@ class VoiceAssistant {
         const stopBtn = document.getElementById('stopBtn');
         
         try {
-            // Деактивируем кнопку старта
-            if (startBtn) startBtn.disabled = true;
+            console.log('Checking browser support and permissions...');
             
-            // Проверяем поддержку API еще раз
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                throw new Error('Speech Recognition API не поддерживается в этом браузере');
+            // Проверяем поддержку getUserMedia
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Браузер не поддерживает доступ к микрофону (getUserMedia)');
+            }
+            
+            // Явно запрашиваем разрешение на использование микрофона
+            console.log('Requesting microphone permission...');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // Останавливаем поток после проверки разрешений
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Microphone permission granted');
+                
+            } catch (micError) {
+                console.error('Microphone permission error:', micError);
+                throw new Error('Нет разрешения на использование микрофона');
             }
             
             // Запрашиваем разрешение на использование микрофона
