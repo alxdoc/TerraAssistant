@@ -1,58 +1,51 @@
 class VoiceAssistant {
     constructor() {
         console.log('Initializing voice assistant...');
-        
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            console.error('Speech Recognition API not supported');
-            this.updateStatus('Ваш браузер не поддерживает распознавание речи', 'error');
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = true;
-            return;
-        }
-        console.log('Speech Recognition API supported');
-        
-        this.recognition = new SpeechRecognition();
-        this.recognition.lang = 'ru-RU';
-        this.recognition.continuous = false;
-        this.recognition.interimResults = false;
         this.isListening = false;
         this.hasPermission = false;
         
-        this.setupRecognition();
-        this.initialize();
+        try {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                throw new Error('Speech Recognition API not supported');
+            }
+            console.log('Speech Recognition API supported');
+            
+            this.recognition = new SpeechRecognition();
+            this.recognition.lang = 'ru-RU';
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+            
+            this.setupRecognition();
+            this.initialize();
+        } catch (error) {
+            console.error('Constructor error:', error);
+            this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
+            this.disableButtons();
+        }
+    }
+
+    disableButtons() {
+        if (document.getElementById('startBtn')) {
+            document.getElementById('startBtn').disabled = true;
+        }
+        if (document.getElementById('stopBtn')) {
+            document.getElementById('stopBtn').disabled = true;
+        }
     }
 
     async initialize() {
         console.log('Initializing voice assistant...');
         try {
-            // Check if the browser supports speech recognition
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                throw new Error('Speech Recognition API not supported');
-            }
-
-            // Initialize recognition
-            this.recognition = new SpeechRecognition();
-            this.recognition.lang = 'ru-RU';
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-
-            // Setup event handlers
-            this.setupRecognition();
-
-            // Check microphone permission
             await this.checkMicrophonePermission();
             this.updateStatus('Готов к работе', 'ready');
             
-            // Enable start button
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
         } catch (error) {
             console.error('Initialization error:', error);
             this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = true;
+            this.disableButtons();
         }
     }
 
@@ -119,13 +112,11 @@ class VoiceAssistant {
 
     async start() {
         console.log('Starting recognition...');
-        
-        // Disable start button while we check permissions
         const startBtn = document.getElementById('startBtn');
         startBtn.disabled = true;
+        document.getElementById('status').textContent = 'Инициализация...';
         
         try {
-            // Always check permission before starting
             if (!this.hasPermission) {
                 console.log('Requesting microphone permission...');
                 await this.checkMicrophonePermission();
@@ -136,11 +127,9 @@ class VoiceAssistant {
                 return;
             }
             
-            // Start recognition
             await this.recognition.start();
             console.log('Recognition started successfully');
             
-            // Update UI
             document.getElementById('stopBtn').disabled = false;
             startBtn.classList.add('listening');
             this.updateStatus('Слушаю...', 'listening');
@@ -156,7 +145,7 @@ class VoiceAssistant {
 
     stop() {
         console.log('Stopping recognition...');
-        if (this.isListening) {
+        if (this.isListening && this.recognition) {
             try {
                 this.recognition.stop();
                 console.log('Recognition stopped successfully');
@@ -240,12 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     startButton.addEventListener('click', async () => {
         console.log('Start button clicked');
-        startButton.disabled = true;
         try {
             await assistant.start();
         } catch (error) {
-            console.error('Error starting recognition:', error);
-            startButton.disabled = false;
+            console.error('Error in click handler:', error);
         }
     });
     
@@ -253,11 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Stop button clicked');
         try {
             assistant.stop();
-            startButton.disabled = false;
         } catch (error) {
-            console.error('Error stopping recognition:', error);
+            console.error('Error in stop handler:', error);
         }
     });
-    
-    console.log('Voice assistant initialized');
 });

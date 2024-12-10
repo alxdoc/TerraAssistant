@@ -5,17 +5,29 @@ from models import db
 from utils.command_processor import process_command
 from utils.nlp import analyze_text
 
-logging.basicConfig(level=logging.DEBUG)
+# Настройка логирования для отладки
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
+# Инициализация Flask приложения
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "terra_assistant_key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///terra.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-}
+
+# Конфигурация базы данных
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config.update(
+    SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "terra_assistant_key"),
+    SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(basedir, 'terra.db')}",
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+)
+
+# Инициализация базы данных
 db.init_app(app)
+
+# Логирование успешной инициализации
+logger.info('Flask application initialized successfully')
 
 @app.route('/')
 def index():
@@ -37,5 +49,6 @@ def handle_command():
         'result': result
     })
 
+# Создание таблиц базы данных
 with app.app_context():
     db.create_all()
