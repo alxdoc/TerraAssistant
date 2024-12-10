@@ -29,6 +29,7 @@ class CommandProcessor:
         """Process a command of given type with provided entities"""
         try:
             logger.info(f"Processing command of type {command_type} with entities {entities}")
+            logger.debug(f"Current handlers available: greeting, task_creation, document_analysis, search, calendar, contact, reminder")
             
             # Маппинг типов команд на обработчики
             handlers = {
@@ -41,6 +42,8 @@ class CommandProcessor:
                 'reminder': lambda: self.handle_reminder(entities),
                 'unknown': lambda: self.handle_unknown_command(entities)
             }
+            
+            logger.debug(f"Looking for handler for command type: {command_type}")
             
             # Получаем обработчик для данного типа команды
             handler = handlers.get(command_type)
@@ -97,6 +100,7 @@ class CommandProcessor:
         query = entities.get('description', '')
         if not query:
             return "Пожалуйста, укажите поисковый запрос"
+        logger.info(f"Выполняется поиск: {query}")
         return f"Выполняется поиск по запросу: {query}"
 
     def handle_calendar(self, entities: Dict) -> str:
@@ -104,6 +108,7 @@ class CommandProcessor:
         description = entities.get('description', '')
         if not description:
             return "Пожалуйста, укажите детали для календаря"
+        logger.info(f"Добавление в календарь: {description}")
         return f"Добавлено в календарь: {description}"
 
     def handle_contact(self, entities: Dict) -> str:
@@ -111,6 +116,7 @@ class CommandProcessor:
         description = entities.get('description', '')
         if not description:
             return "Пожалуйста, укажите информацию о контакте"
+        logger.info(f"Обработка контакта: {description}")
         return f"Обработка контакта: {description}"
 
     def handle_reminder(self, entities: Dict) -> str:
@@ -118,6 +124,7 @@ class CommandProcessor:
         description = entities.get('description', '')
         if not description:
             return "Пожалуйста, укажите текст напоминания"
+        logger.info(f"Установка напоминания: {description}")
         return f"Установлено напоминание: {description}"
 
     def format_error(self, details: str) -> str:

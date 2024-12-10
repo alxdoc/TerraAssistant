@@ -2,7 +2,7 @@ import logging
 import os
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-from models import db, Command
+from models import init_db, Command, db
 from utils.command_processor import process_command
 from utils.nlp import analyze_text, DialogContext
 
@@ -13,8 +13,11 @@ logger = logging.getLogger(__name__)
 def create_app():
     """Create and configure the Flask application"""
     try:
+        logger.info("Starting Flask application creation...")
+        
         # Создаем приложение Flask
         app = Flask(__name__)
+        logger.debug("Flask application instance created")
         
         # Конфигурация приложения
         app.config.update(
@@ -27,16 +30,16 @@ def create_app():
         # Инициализация CORS
         CORS(app)
         
-        # Инициализация базы данных
-        db.init_app(app)
-        
         # Создаем директорию instance если её нет
         os.makedirs(app.instance_path, exist_ok=True)
         
-        # Создаем все таблицы в контексте приложения
-        with app.app_context():
-            db.create_all()
-            app.dialog_context = DialogContext()
+        # Инициализация базы данных
+        init_db(app)
+        
+        # Инициализация контекста диалога
+        app.dialog_context = DialogContext()
+        
+        logger.info("Application initialized successfully")
 
         @app.route('/')
         def index():
@@ -91,14 +94,19 @@ def create_app():
                     }), 500
 
                 # Сохранение результата в БД
-                command = Command(
-                    text=text,
-                    command_type=command_type,
-                    status='completed',
-                    result=result
-                )
-                db.session.add(command)
-                db.session.commit()
+                try:
+                    command = Command(
+                        text=text,
+                        command_type=command_type,
+                        status='completed',
+                        result=result
+                    )
+                    db.session.add(command)
+                    db.session.commit()
+                    logger.info(f"Command saved to database: {command}")
+                except Exception as db_error:
+                    logger.error(f"Error saving to database: {db_error}")
+                    db.session.rollback()
 
                 return jsonify({
                     'status': 'success',

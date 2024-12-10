@@ -139,7 +139,9 @@ class VoiceAssistant {
                                 console.log('Extracted command:', command);
                                 
                                 if (command) {
+                                    console.log('Processing voice command with full text:', text);
                                     this.processVoiceInput(text);
+                                    this.updateStatus('Обработка команды...', 'processing');
                                     // Автоматически продолжаем слушать
                                     setTimeout(() => {
                                         if (!this.isListening) {
@@ -276,16 +278,18 @@ class VoiceAssistant {
         }
     }
 
-    processVoiceInput(text) {
+    async processVoiceInput(text) {
         console.log('Processing voice input:', text);
         if (!text) {
             console.log('Empty text received');
+            this.updateStatus('Пустой текст', 'error');
             return;
         }
         
-        // Нормализуем текст для более надежного распознавания
-        const normalizedText = text.toLowerCase().trim();
-        console.log('Normalized text:', normalizedText);
+        try {
+            // Нормализуем текст для более надежного распознавания
+            const normalizedText = text.toLowerCase().trim();
+            console.log('Normalized text:', normalizedText);
         
         // Проверяем наличие ключевого слова в любой форме
         if (normalizedText.includes('терра') || normalizedText.includes('terra')) {
@@ -300,6 +304,12 @@ class VoiceAssistant {
                 console.log('Valid command detected:', command);
                 const commandType = detectCommandType(command);
                 console.log('Detected command type:', commandType);
+                console.log('Full command details:', {
+                    originalText: text,
+                    processedCommand: command,
+                    commandType: commandType,
+                    timestamp: new Date().toISOString()
+                });
                 
                 this.updateStatus('Обработка команды...', 'processing');
                 this.executeCommand(command, commandType)
@@ -352,6 +362,10 @@ class VoiceAssistant {
         try {
             this.updateStatus('Отправка команды...', 'processing');
             console.log('Sending request to server...');
+            
+            if (!command || !commandType) {
+                throw new Error('Неверные параметры команды');
+            }
             
             const response = await fetch('/process_command', {
                 method: 'POST',

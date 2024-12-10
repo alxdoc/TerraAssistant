@@ -1,7 +1,5 @@
 import logging
 import os
-import logging
-import os
 from app import create_app
 
 # Настройка логирования
