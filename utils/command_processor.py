@@ -30,6 +30,11 @@ class CommandProcessor:
             logger.info(f"Начало обработки команды типа: {command_type}")
             logger.debug(f"Сущности команды: {entities}")
             
+            # Проверяем наличие ошибки в сущностях
+            if 'error' in entities:
+                logger.error(f"Обнаружена ошибка в сущностях: {entities['error']}")
+                return self.format_error(entities['error'])
+            
             # Проверяем валидность типа команды
             if not command_type:
                 logger.warning("Получен пустой тип команды")
@@ -40,24 +45,34 @@ class CommandProcessor:
                 'greeting': self.handle_greeting,
                 'task_creation': lambda: self.handle_task_creation(entities),
                 'document_analysis': lambda: self.handle_document_analysis(entities),
-                'search': lambda: self.handle_search(entities)
+                'search': lambda: self.handle_search(entities),
+                'unknown': lambda: self.handle_unknown_command(entities)
             }
             
             # Получаем обработчик для данного типа команды
-            handler = handlers.get(command_type)
+            handler = handlers.get(command_type, handlers['unknown'])
             
-            if handler:
-                logger.debug(f"Найден обработчик для команды типа: {command_type}")
-                response = handler()
+            logger.debug(f"Найден обработчик для команды типа: {command_type}")
+            response = handler()
+            
+            if response:
                 logger.info(f"Команда успешно обработана. Ответ: {response}")
                 return response
             else:
-                logger.warning(f"Неизвестный тип команды: {command_type}")
+                logger.warning("Получен пустой ответ от обработчика")
                 return self.response_templates['unknown'][0]
                 
         except Exception as e:
             logger.error(f"Ошибка при обработке команды: {str(e)}", exc_info=True)
             return self.format_error(str(e))
+
+    def handle_unknown_command(self, entities: Dict) -> str:
+        """Обработка неизвестной команды"""
+        description = entities.get('description', '')
+        if description:
+            logger.info(f"Получена неизвестная команда с описанием: {description}")
+            return f"Я не совсем поняла команду: '{description}'. Можете сформулировать иначе?"
+        return self.response_templates['unknown'][0]
 
     def handle_greeting(self) -> str:
         """Обработка приветствия"""

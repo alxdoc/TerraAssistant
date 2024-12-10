@@ -41,8 +41,8 @@ def main():
             init_db(app)
             logger.info("Database initialized successfully")
         
-        logger.info("Starting the Flask server on port 5000...")
-        app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+        logger.info("Starting the Flask server on port 3000...")
+        app.run(host='0.0.0.0', port=3000, debug=True, use_reloader=False)
     except Exception as e:
         logger.error(f"Failed to start the server: {str(e)}", exc_info=True)
         raise
