@@ -13,8 +13,15 @@ class VoiceAssistant {
             
             this.recognition = new SpeechRecognition();
             this.recognition.lang = 'ru-RU';
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.maxAlternatives = 1;
+            
+            console.log('Recognition configured with params:', {
+                lang: this.recognition.lang,
+                continuous: this.recognition.continuous,
+                interimResults: this.recognition.interimResults
+            });
             
             this.setupRecognition();
             this.initialize();
@@ -37,15 +44,31 @@ class VoiceAssistant {
     async initialize() {
         console.log('Initializing voice assistant...');
         try {
-            await this.checkMicrophonePermission();
-            this.updateStatus('Готов к работе', 'ready');
+            const hasPermission = await this.checkMicrophonePermission();
+            console.log('Microphone permission status:', hasPermission);
             
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
+            if (hasPermission) {
+                this.updateStatus('Готов к работе', 'ready');
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                
+                // Проверяем поддержку Web Speech API еще раз
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    throw new Error('Браузер не поддерживает распознавание речи');
+                }
+            } else {
+                throw new Error('Нет разрешения на использование микрофона');
+            }
         } catch (error) {
             console.error('Initialization error:', error);
             this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
             this.disableButtons();
+            
+            // Показываем сообщение пользователю
+            this.displayResult({
+                command_type: 'error',
+                result: `Ошибка инициализации: ${error.message}. Пожалуйста, разрешите доступ к микрофону и перезагрузите страницу.`
+            });
         }
     }
 
@@ -70,8 +93,31 @@ class VoiceAssistant {
             console.log('Recognition started');
             this.isListening = true;
             this.updateStatus('Слушаю...', 'listening');
-            document.getElementById('startBtn').classList.add('listening');
-            document.getElementById('stopBtn').disabled = false;
+            
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (startBtn && stopBtn) {
+                startBtn.classList.add('listening');
+                stopBtn.disabled = false;
+                
+                // Показываем сообщение пользователю
+                this.displayResult({
+                    command_type: 'info',
+                    result: 'Микрофон активирован. Скажите "ТЕРРА" и вашу команду.'
+                });
+            }
+            
+            // Добавляем таймаут для автоматической остановки после длительного молчания
+            this.recognitionTimeout = setTimeout(() => {
+                if (this.isListening) {
+                    console.log('Auto-stopping recognition due to silence');
+                    this.stop();
+                    
+                    // Автоматически перезапускаем через секунду
+                    setTimeout(() => this.start(), 1000);
+                }
+            }, 10000); // 10 секунд тишины
             
             // Добавляем таймаут для автоматической остановки
             setTimeout(() => {
