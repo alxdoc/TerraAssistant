@@ -1,125 +1,184 @@
 class VoiceAssistant {
     constructor() {
+        console.log('Initializing voice assistant...');
+        
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             console.error('Speech Recognition API not supported');
-            this.updateStatus('Ваш браузер не поддерживает распознавание речи');
+            this.updateStatus('Ваш браузер не поддерживает распознавание речи', 'error');
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = true;
             return;
         }
         console.log('Speech Recognition API supported');
         
-        this.recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        this.recognition = new SpeechRecognition();
         this.recognition.lang = 'ru-RU';
-        this.recognition.continuous = true;
+        this.recognition.continuous = false;
         this.recognition.interimResults = false;
         this.isListening = false;
         this.hasPermission = false;
+        
         this.setupRecognition();
-        this.checkMicrophonePermission();
+        this.initialize();
+    }
+
+    async initialize() {
+        console.log('Initializing voice assistant...');
+        try {
+            // Check if the browser supports speech recognition
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                throw new Error('Speech Recognition API not supported');
+            }
+
+            // Initialize recognition
+            this.recognition = new SpeechRecognition();
+            this.recognition.lang = 'ru-RU';
+            this.recognition.continuous = false;
+            this.recognition.interimResults = false;
+
+            // Setup event handlers
+            this.setupRecognition();
+
+            // Check microphone permission
+            await this.checkMicrophonePermission();
+            this.updateStatus('Готов к работе', 'ready');
+            
+            // Enable start button
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+        } catch (error) {
+            console.error('Initialization error:', error);
+            this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+        }
     }
 
     async checkMicrophonePermission() {
+        console.log('Checking microphone permission...');
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(track => track.stop());
             this.hasPermission = true;
-            this.updateStatus('Готов к работе');
+            console.log('Microphone permission granted');
+            return true;
         } catch (error) {
-            console.error('Ошибка доступа к микрофону:', error);
+            console.error('Microphone permission error:', error);
             this.hasPermission = false;
-            this.updateStatus('Нет доступа к микрофону');
+            this.updateStatus('Нет доступа к микрофону', 'error');
+            throw error;
         }
     }
 
     setupRecognition() {
         this.recognition.onstart = () => {
-            this.updateStatus('Слушаю...');
+            console.log('Recognition started');
             this.isListening = true;
+            this.updateStatus('Слушаю...', 'listening');
             document.getElementById('startBtn').classList.add('listening');
+            document.getElementById('stopBtn').disabled = false;
         };
 
         this.recognition.onend = () => {
+            console.log('Recognition ended');
+            this.isListening = false;
             document.getElementById('startBtn').classList.remove('listening');
-            if (this.isListening && this.hasPermission) {
-                setTimeout(() => {
-                    try {
-                        this.recognition.start();
-                    } catch (error) {
-                        console.error('Ошибка перезапуска распознавания:', error);
-                        this.isListening = false;
-                        this.updateStatus('Ошибка распознавания');
-                    }
-                }, 100);
+            document.getElementById('stopBtn').disabled = true;
+            
+            if (!this.hasPermission) {
+                this.updateStatus('Нет доступа к микрофону', 'error');
+            } else {
+                this.updateStatus('Готов к работе', 'ready');
             }
         };
 
         this.recognition.onresult = (event) => {
+            console.log('Got recognition result');
             const text = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+            console.log('Recognized text:', text);
             this.processVoiceInput(text);
         };
 
         this.recognition.onerror = (event) => {
-            console.error('Ошибка распознавания речи:', event.error);
+            console.error('Recognition error:', event.error);
+            this.isListening = false;
+            
             if (event.error === 'not-allowed') {
                 this.hasPermission = false;
-                this.isListening = false;
-                this.updateStatus('Нет доступа к микрофону');
+                this.updateStatus('Нет доступа к микрофону', 'error');
             } else {
-                this.updateStatus(`Ошибка: ${event.error}`);
+                this.updateStatus(`Ошибка: ${event.error}`, 'error');
             }
+            
+            document.getElementById('startBtn').classList.remove('listening');
+            document.getElementById('stopBtn').disabled = true;
         };
+    }
 
     async start() {
-        console.log('Starting voice recognition...');
-        console.log('Current state:', { hasPermission: this.hasPermission, isListening: this.isListening });
+        console.log('Starting recognition...');
         
-        if (!this.hasPermission) {
-            console.log('Requesting microphone permission...');
-            await this.checkMicrophonePermission();
-        }
+        // Disable start button while we check permissions
+        const startBtn = document.getElementById('startBtn');
+        startBtn.disabled = true;
         
-        if (this.hasPermission && !this.isListening) {
-            try {
-                console.log('Starting recognition service...');
-                await this.recognition.start();
-                this.updateStatus('Слушаю...');
-            } catch (error) {
-                console.error('Ошибка запуска распознавания:', error);
-                this.updateStatus('Ошибка запуска. Попробуйте перезагрузить страницу');
-                this.isListening = false;
+        try {
+            // Always check permission before starting
+            if (!this.hasPermission) {
+                console.log('Requesting microphone permission...');
+                await this.checkMicrophonePermission();
             }
-        } else if (!this.hasPermission) {
-            console.log('No microphone permission');
-            this.updateStatus('Пожалуйста, разрешите доступ к микрофону');
-        } else {
-            console.log('Recognition already active');
+            
+            if (this.isListening) {
+                console.log('Already listening');
+                return;
+            }
+            
+            // Start recognition
+            await this.recognition.start();
+            console.log('Recognition started successfully');
+            
+            // Update UI
+            document.getElementById('stopBtn').disabled = false;
+            startBtn.classList.add('listening');
+            this.updateStatus('Слушаю...', 'listening');
+        } catch (error) {
+            console.error('Error starting recognition:', error);
+            this.updateStatus('Ошибка запуска распознавания: ' + error.message, 'error');
+            this.isListening = false;
+            startBtn.disabled = false;
+            startBtn.classList.remove('listening');
+            document.getElementById('stopBtn').disabled = true;
         }
     }
 
     stop() {
-        this.isListening = false;
-        try {
-            this.recognition.stop();
-            this.updateStatus('Ожидание');
-            document.getElementById('startBtn').classList.remove('listening');
-        } catch (error) {
-            console.error('Ошибка остановки распознавания:', error);
+        console.log('Stopping recognition...');
+        if (this.isListening) {
+            try {
+                this.recognition.stop();
+                console.log('Recognition stopped successfully');
+            } catch (error) {
+                console.error('Error stopping recognition:', error);
+            }
         }
     }
 
     processVoiceInput(text) {
+        console.log('Processing voice input:', text);
         if (text.includes('терра')) {
             const command = text.replace('терра', '').trim();
             if (command) {
-                this.updateStatus('Обработка команды...');
+                this.updateStatus('Обработка команды...', 'processing');
                 this.executeCommand(command);
             }
         }
     }
 
     async executeCommand(command) {
+        console.log('Executing command:', command);
         try {
             const response = await fetch('/process_command', {
                 method: 'POST',
@@ -129,20 +188,31 @@ class VoiceAssistant {
                 body: JSON.stringify({ text: command })
             });
             
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const result = await response.json();
+            console.log('Command execution result:', result);
             this.displayResult(result);
+            this.updateStatus('Готов к работе', 'ready');
         } catch (error) {
             console.error('Error executing command:', error);
-            this.updateStatus('Ошибка выполнения команды');
+            this.updateStatus('Ошибка выполнения команды', 'error');
         }
     }
 
-    updateStatus(status) {
+    updateStatus(status, type = 'info') {
+        console.log('Status update:', status, type);
         const statusElement = document.getElementById('status');
-        statusElement.textContent = status;
+        if (statusElement) {
+            statusElement.textContent = status;
+            statusElement.className = `status-text ${type}`;
+        }
     }
 
     displayResult(result) {
+        console.log('Displaying result:', result);
         const resultContainer = document.getElementById('result-container');
         const resultElement = document.createElement('div');
         resultElement.className = 'alert alert-info mt-3';
@@ -155,7 +225,7 @@ class VoiceAssistant {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing Voice Assistant...');
+    console.log('Document loaded, initializing voice assistant...');
     const assistant = new VoiceAssistant();
     
     const startButton = document.getElementById('startBtn');
@@ -166,12 +236,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
+    stopButton.disabled = true;
+    
     startButton.addEventListener('click', async () => {
         console.log('Start button clicked');
+        startButton.disabled = true;
         try {
             await assistant.start();
         } catch (error) {
             console.error('Error starting recognition:', error);
+            startButton.disabled = false;
         }
     });
     
@@ -179,10 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Stop button clicked');
         try {
             assistant.stop();
+            startButton.disabled = false;
         } catch (error) {
             console.error('Error stopping recognition:', error);
         }
     });
     
-    console.log('Voice Assistant initialized');
+    console.log('Voice assistant initialized');
 });

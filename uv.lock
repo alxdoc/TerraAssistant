@@ -372,9 +372,13 @@ dependencies = [
     { name = "email-validator" },
     { name = "flask" },
     { name = "flask-sqlalchemy" },
+    { name = "itsdangerous" },
+    { name = "jinja2" },
     { name = "psycopg2-binary" },
     { name = "scikit-learn" },
     { name = "speechrecognition" },
+    { name = "sqlalchemy" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -382,9 +386,13 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.2.0" },
     { name = "flask", specifier = ">=3.1.0" },
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
+    { name = "itsdangerous", specifier = ">=2.2.0" },
+    { name = "jinja2", specifier = ">=3.1.4" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "scikit-learn", specifier = ">=1.6.0" },
     { name = "speechrecognition", specifier = ">=3.11.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.36" },
+    { name = "werkzeug", specifier = ">=3.1.3" },
 ]
 
 [[package]]
