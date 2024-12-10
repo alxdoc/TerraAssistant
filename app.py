@@ -1,6 +1,7 @@
 import os
 import logging
 from flask import Flask, render_template, jsonify, request
+from flask_cors import CORS
 from models import db
 from utils.command_processor import process_command
 from utils.nlp import analyze_text
@@ -12,15 +13,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Создание и настройка приложения
 app = Flask(__name__)
+logger.info("Инициализация Flask приложения...")
 
-# Включаем CORS для всех маршрутов
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    return response
+# Конфигурация CORS
+CORS(app, resources={r"/*": {"origins": "*"}})
+logger.info("CORS настроен для всех маршрутов")
 
 # Конфигурация базы данных
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -29,6 +28,7 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(basedir, 'terra.db')}",
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
+logger.info("Конфигурация базы данных завершена")
 
 # Инициализация базы данных
 db.init_app(app)
@@ -53,11 +53,24 @@ def index():
         logger.error(f'Ошибка при обработке главной страницы: {e}')
         return 'Internal Server Error', 500
 
-@app.route('/process_command', methods=['POST'])
+@app.route('/process_command', methods=['POST', 'OPTIONS'])
 def handle_command():
     """Обработка голосовой команды"""
+    if request.method == 'OPTIONS':
+        return '', 204
+        
     try:
         logger.debug('Получен POST запрос к /process_command')
+        logger.debug(f'Заголовки запроса: {dict(request.headers)}')
+        logger.debug(f'Тело запроса: {request.get_data(as_text=True)}')
+        
+        if not request.is_json:
+            logger.error('Получен не JSON запрос')
+            return jsonify({
+                'status': 'error',
+                'error': 'Content-Type должен быть application/json'
+            }), 400
+            
         text = request.json.get('text', '')
         logger.debug(f'Текст команды: {text}')
         
@@ -69,13 +82,15 @@ def handle_command():
         result = process_command(command_type, entities)
         logger.debug(f'Результат обработки: {result}')
         
-        return jsonify({
+        response = jsonify({
             'status': 'success',
             'command_type': command_type,
             'result': result
         })
+        return response
+        
     except Exception as e:
-        logger.error(f'Ошибка при обработке команды: {e}')
+        logger.error(f'Ошибка при обработке команды: {e}', exc_info=True)
         return jsonify({
             'status': 'error',
             'error': str(e)
