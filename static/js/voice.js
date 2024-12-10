@@ -332,11 +332,37 @@ class VoiceAssistant {
         const stopBtn = document.getElementById('stopBtn');
         
         try {
+            this.updateStatus('Запуск распознавания...', 'processing');
             console.log('Checking browser support and permissions...');
             
             // Проверяем поддержку getUserMedia
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 throw new Error('Браузер не поддерживает доступ к микрофону (getUserMedia)');
+            }
+
+            // Принудительно запрашиваем разрешение на использование микрофона
+            try {
+                console.log('Requesting microphone access...');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // Останавливаем поток после проверки разрешений
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Microphone access granted');
+                this.hasPermission = true;
+            } catch (micError) {
+                console.error('Microphone access denied:', micError);
+                this.updateStatus('Нет доступа к микрофону', 'error');
+                this.displayResult({
+                    command_type: 'error',
+                    result: 'Пожалуйста, разрешите доступ к микрофону в настройках браузера'
+                });
+                throw new Error('Доступ к микрофону запрещён');
             }
             
             // Явно запрашиваем разрешение на использование микрофона
@@ -690,6 +716,25 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Could not find microphone buttons');
         return;
     }
+
+    // Добавляем обработчики событий для кнопок
+    startButton.addEventListener('click', async () => {
+        console.log('Start button clicked');
+        try {
+            await assistant.start();
+        } catch (error) {
+            console.error('Error starting recognition:', error);
+            assistant.updateStatus('Ошибка запуска: ' + error.message, 'error');
+        }
+    });
+    
+    stopButton.addEventListener('click', () => {
+        console.log('Stop button clicked');
+        assistant.stop();
+    });
+    
+    // Изначально деактивируем кнопку остановки
+    stopButton.disabled = true;
     
     stopButton.disabled = true;
     
