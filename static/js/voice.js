@@ -75,15 +75,50 @@ class VoiceAssistant {
     async checkMicrophonePermission() {
         console.log('Checking microphone permission...');
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(track => track.stop());
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('API микрофона не поддерживается в этом браузере');
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+            
+            console.log('Got media stream:', stream);
+            console.log('Audio tracks:', stream.getAudioTracks());
+            
+            // Проверяем состояние треков
+            const audioTracks = stream.getAudioTracks();
+            if (audioTracks.length === 0) {
+                throw new Error('Не удалось получить аудио трек');
+            }
+            
+            const audioTrack = audioTracks[0];
+            console.log('Audio track settings:', audioTrack.getSettings());
+            console.log('Audio track constraints:', audioTrack.getConstraints());
+            
+            // Останавливаем треки после проверки
+            stream.getTracks().forEach(track => {
+                track.stop();
+                console.log('Track stopped:', track.kind);
+            });
+            
             this.hasPermission = true;
-            console.log('Microphone permission granted');
+            console.log('Microphone permission granted and verified');
             return true;
         } catch (error) {
             console.error('Microphone permission error:', error);
             this.hasPermission = false;
-            this.updateStatus('Нет доступа к микрофону', 'error');
+            this.updateStatus('Нет доступа к микрофону: ' + error.message, 'error');
+            
+            // Показываем пользователю сообщение об ошибке
+            this.displayResult({
+                command_type: 'error',
+                result: `Ошибка доступа к микрофону: ${error.message}. Пожалуйста, разрешите доступ к микрофону в настройках браузера.`
+            });
             throw error;
         }
     }
@@ -168,13 +203,28 @@ class VoiceAssistant {
         this.recognition.onresult = (event) => {
             try {
                 console.log('Got recognition result:', event);
+                console.log('Number of results:', event.results.length);
+                console.log('Current result index:', event.resultIndex);
+                
                 if (event.results && event.results.length > 0) {
                     const result = event.results[event.results.length - 1];
+                    console.log('Processing result:', result);
+                    console.log('Is final:', result.isFinal);
+                    console.log('Confidence:', result[0].confidence);
+                    
                     if (result.isFinal) {
                         const text = result[0].transcript.trim();
-                        console.log('Recognized text:', text);
+                        console.log('Recognized final text:', text);
+                        
+                        // Обновляем статус и показываем промежуточный результат
+                        this.updateStatus('Текст распознан: ' + text, 'processing');
                         
                         if (text) {
+                            // Показываем пользователю что текст распознан
+                            this.displayResult({
+                                command_type: 'info',
+                                result: `Распознанный текст: ${text}`
+                            });
                             console.log('Processing voice input:', text);
                             
                             // Проверяем наличие ключевого слова в любом регистре
@@ -260,8 +310,19 @@ class VoiceAssistant {
         const stopBtn = document.getElementById('stopBtn');
         
         try {
+            // Проверяем поддержку API
+            if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+                throw new Error('Speech Recognition API не поддерживается в этом браузере');
+            }
+            
             startBtn.disabled = true;
-            this.updateStatus('Инициализация...', 'processing');
+            this.updateStatus('Инициализация микрофона...', 'processing');
+            
+            // Показываем пользователю статус
+            this.displayResult({
+                command_type: 'info',
+                result: 'Инициализация системы распознавания речи...'
+            });
             
             if (!this.hasPermission) {
                 console.log('Requesting microphone permission...');
