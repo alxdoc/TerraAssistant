@@ -9,8 +9,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    logger.info("Запуск Flask сервера на порту 5000...")
     try:
+        logger.info("Запуск Flask сервера на порту 5000...")
         app.run(host="0.0.0.0", port=5000, debug=True)
     except Exception as e:
         logger.error(f"Ошибка при запуске сервера: {e}")
+        raise
