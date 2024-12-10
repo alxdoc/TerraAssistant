@@ -50,16 +50,67 @@ function normalizeText(text) {
         .trim();
 }
 
-// Улучшенная функция определения типа команды
+// Улучшенная функция определения типа команды с поддержкой частичного совпадения
 function detectCommandType(text) {
     text = normalizeText(text);
+    console.log('Detecting command type for:', text);
+    
+    // Удаляем ключевое слово "терра" из текста, если оно есть
+    text = text.replace(/терра/gi, '').trim();
+    console.log('Text after removing keyword:', text);
     
     // Проверяем каждый тип команды
     for (const [type, patterns] of Object.entries(CommandPatterns)) {
-        if (patterns.some(pattern => text.includes(normalizeText(pattern)))) {
-            return type;
+        console.log(`Checking patterns for type ${type}:`, patterns);
+        for (const pattern of patterns) {
+            const normalizedPattern = normalizeText(pattern);
+            // Используем более гибкое сравнение
+            if (text.includes(normalizedPattern) || 
+                normalizedPattern.includes(text) ||
+                levenshteinDistance(text, normalizedPattern) <= 2) {
+                console.log(`Match found for type ${type} with pattern:`, pattern);
+                return type;
+            }
         }
     }
     
+    // Проверяем на приветствие
+    if (text.match(/^(привет|здравствуй|добр[ыое][йе]|хай)/)) {
+        return 'greeting';
+    }
+    
+    console.log('No matching command type found, returning unknown');
     return CommandTypes.UNKNOWN;
+}
+
+// Функция для вычисления расстояния Левенштейна
+function levenshteinDistance(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+
+    const matrix = [];
+
+    for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+
+    return matrix[b.length][a.length];
 }

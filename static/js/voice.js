@@ -104,7 +104,17 @@ class VoiceAssistant {
                         const text = result[0].transcript.trim().toLowerCase();
                         console.log('Recognized text:', text);
                         if (text) {
-                            this.processVoiceInput(text);
+                            // Добавляем логирование для отладки
+                            console.log('Processing voice input:', text);
+                            // Проверяем наличие ключевого слова независимо от регистра
+                            if (text.toLowerCase().includes('терра')) {
+                                const command = text.toLowerCase().replace(/терра/gi, '').trim();
+                                console.log('Extracted command:', command);
+                                this.processVoiceInput(text);
+                            } else {
+                                console.log('Keyword "терра" not found in:', text);
+                                this.updateStatus('Ожидание команды со словом "ТЕРРА"', 'ready');
+                            }
                         } else {
                             console.error('Empty recognition result');
                             this.updateStatus('Не удалось распознать речь', 'error');
@@ -117,6 +127,9 @@ class VoiceAssistant {
             } catch (error) {
                 console.error('Error processing recognition result:', error);
                 this.updateStatus('Ошибка обработки распознанной речи', 'error');
+                // Восстанавливаем состояние кнопок
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
             }
         };
 

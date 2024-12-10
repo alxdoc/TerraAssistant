@@ -7,9 +7,6 @@ from models import db, Command, Task
 from utils.command_processor import process_command
 from utils.nlp import analyze_text
 
-# Создание и настройка приложения
-app = Flask(__name__)
-
 # Настройка логирования
 logging.basicConfig(
     level=logging.DEBUG,
@@ -17,7 +14,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Конфигурация CORS
+# Создание и настройка приложения
+app = Flask(__name__)
 CORS(app)
 
 # Конфигурация базы данных
@@ -34,19 +32,22 @@ db.init_app(app)
 
 def init_db():
     """Инициализация базы данных"""
-    with app.app_context():
-        db.create_all()
-        logger.info('База данных успешно инициализирована')
+    try:
+        with app.app_context():
+            db.create_all()
+            logger.info('База данных успешно инициализирована')
+    except Exception as e:
+        logger.error(f'Ошибка при инициализации базы данных: {e}')
+        raise
 
 @app.route('/')
 def index():
     """Главная страница"""
     try:
-        logger.debug('Обработка запроса к главной странице')
         return render_template('index.html')
     except Exception as e:
-        logger.error(f'Ошибка при обработке главной страницы: {e}')
-        return 'Internal Server Error', 500
+        logger.error(f'Ошибка при рендеринге главной страницы: {e}')
+        return "Ошибка загрузки страницы", 500
 
 @app.route('/process_command', methods=['POST', 'OPTIONS'])
 def handle_command():
@@ -55,53 +56,42 @@ def handle_command():
         return '', 204
         
     try:
-        logger.debug('Получен POST запрос к /process_command')
-        logger.debug(f'Заголовки запроса: {dict(request.headers)}')
-        logger.debug(f'Тело запроса: {request.get_data(as_text=True)}')
-        logger.info('Начало обработки голосовой команды')
-        
         if not request.is_json:
-            logger.error('Получен не JSON запрос')
             return jsonify({
                 'status': 'error',
                 'error': 'Content-Type должен быть application/json'
             }), 400
             
         text = request.json.get('text', '')
-        logger.debug(f'Текст команды: {text}')
+        logger.info(f'Получена команда: {text}')
         
         # Анализ текста команды
         command_type, entities = analyze_text(text)
-        logger.debug(f'Тип команды: {command_type}, сущности: {entities}')
+        logger.info(f'Определен тип команды: {command_type}')
         
         # Обработка команды
-        try:
-            result = process_command(command_type, entities)
-            logger.debug(f'Результат обработки: {result}')
-            
-            response = jsonify({
-                'status': 'success',
-                'command_type': command_type,
-                'result': result,
-                'timestamp': datetime.now().isoformat()
-            })
-            return response
-        except Exception as e:
-            logger.error(f'Ошибка при обработке команды: {str(e)}')
-            return jsonify({
-                'status': 'error',
-                'error': 'Ошибка при обработке команды: ' + str(e)
-            }), 500
+        result = process_command(command_type, entities)
+        
+        return jsonify({
+            'status': 'success',
+            'command_type': command_type,
+            'result': result,
+            'timestamp': datetime.now().isoformat()
+        })
         
     except Exception as e:
-        logger.error(f'Ошибка при обработке команды: {e}', exc_info=True)
+        logger.error(f'Ошибка при обработке команды: {str(e)}', exc_info=True)
         return jsonify({
             'status': 'error',
             'error': str(e)
         }), 500
 
-# Примечание: init_db() будет вызываться из main.py
-
 if __name__ == '__main__':
-    logger.info("Запуск Flask сервера...")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    try:
+        logger.info('Запуск приложения...')
+        init_db()
+        logger.info('Запуск Flask сервера на порту 5000...')
+        app.run(host='0.0.0.0', port=5000, debug=True)
+    except Exception as e:
+        logger.error(f'Критическая ошибка при запуске приложения: {e}', exc_info=True)
+        raise

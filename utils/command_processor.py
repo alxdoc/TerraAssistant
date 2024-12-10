@@ -13,7 +13,16 @@ def process_command(command_type: str, entities: Dict) -> str:
     try:
         logger.debug(f"Начало обработки команды типа {command_type} с сущностями: {entities}")
         
-        if command_type == 'task_creation':
+        if command_type == 'greeting':
+            result = "Здравствуйте! Я ТЕРРА, ваш голосовой бизнес-ассистент. Чем могу помочь?"
+        elif command_type == 'help':
+            result = """Я могу помочь вам со следующими задачами:
+- Создание и управление задачами
+- Анализ документов
+- Поиск информации
+- Формирование отчётов
+Просто скажите, что нужно сделать."""
+        elif command_type == 'task_creation':
             result = create_task(entities)
         elif command_type == 'document_analysis':
             result = analyze_document(entities)
@@ -23,7 +32,7 @@ def process_command(command_type: str, entities: Dict) -> str:
             result = generate_report()
         else:
             logger.warning(f"Получен неизвестный тип команды: {command_type}")
-            result = "Команда не распознана"
+            result = "Извините, я не совсем поняла команду. Попробуйте сказать иначе или спросите 'Что ты умеешь?'"
             
         if not result:
             logger.warning("Получен пустой результат выполнения команды")
