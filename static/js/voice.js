@@ -85,13 +85,30 @@ class VoiceAssistant {
         this.recognition.onend = () => {
             console.log('Recognition ended');
             this.isListening = false;
-            document.getElementById('startBtn').classList.remove('listening');
-            document.getElementById('stopBtn').disabled = true;
+            
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            
+            if (startBtn && stopBtn) {
+                startBtn.classList.remove('listening');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
             
             if (!this.hasPermission) {
                 this.updateStatus('Нет доступа к микрофону', 'error');
             } else {
-                this.updateStatus('Готов к работе', 'ready');
+                // Проверяем, не было ли ошибок при распознавании
+                if (!document.querySelector('.status-text.error')) {
+                    this.updateStatus('Готов к работе', 'ready');
+                }
+                
+                // Автоматически перезапускаем распознавание после короткой задержки при ошибках
+                setTimeout(() => {
+                    if (startBtn && !startBtn.disabled && document.querySelector('.status-text.error')) {
+                        this.initialize();
+                    }
+                }, 2000);
             }
         };
 
@@ -199,8 +216,22 @@ class VoiceAssistant {
             try {
                 this.recognition.stop();
                 console.log('Recognition stopped successfully');
+                
+                // Восстанавливаем состояние кнопок
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                
+                if (startBtn && stopBtn) {
+                    startBtn.disabled = false;
+                    startBtn.classList.remove('listening');
+                    stopBtn.disabled = true;
+                }
+                
+                this.isListening = false;
+                this.updateStatus('Готов к работе', 'ready');
             } catch (error) {
                 console.error('Error stopping recognition:', error);
+                this.updateStatus('Ошибка при остановке распознавания', 'error');
             }
         }
     }

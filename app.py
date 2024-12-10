@@ -1,5 +1,7 @@
 import os
+import sys
 import logging
+from pathlib import Path
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
@@ -16,16 +18,28 @@ logger = logging.getLogger(__name__)
 
 # Создание и настройка приложения
 app = Flask(__name__)
+
+# Конфигурация CORS
 CORS(app)
 
 # Конфигурация базы данных
 basedir = os.path.abspath(os.path.dirname(__file__))
+instance_path = os.path.join(basedir, 'instance')
+
+# Создаем директорию для базы данных, если её нет
+try:
+    Path(instance_path).mkdir(parents=True, exist_ok=True)
+    logger.info(f'Директория для базы данных создана: {instance_path}')
+except Exception as e:
+    logger.error(f'Не удалось создать директорию для базы данных: {str(e)}')
+    sys.exit(1)
+
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "terra_assistant_key"),
-    SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(basedir, 'terra.db')}",
+    SQLALCHEMY_DATABASE_URI=f"sqlite:///{os.path.join(instance_path, 'terra.db')}",
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    TEMPLATES_AUTO_RELOAD=True
-)
+    TEMPLATES_AUTO_RELOAD=True,
+    CORS_HEADERS='Content-Type')
 
 # Инициализация базы данных
 db.init_app(app)
@@ -33,12 +47,23 @@ db.init_app(app)
 def init_db():
     """Инициализация базы данных"""
     try:
+        logger.debug('Начало инициализации базы данных...')
+        if not os.path.exists(instance_path):
+            logger.error(f'Директория {instance_path} не существует')
+            return False
+            
         with app.app_context():
+            logger.debug('Проверка соединения с базой данных...')
+            db.engine.connect()
+            logger.debug('Соединение с базой данных успешно')
+            
+            logger.debug('Создание всех таблиц...')
             db.create_all()
             logger.info('База данных успешно инициализирована')
+            return True
     except Exception as e:
-        logger.error(f'Ошибка при инициализации базы данных: {e}')
-        raise
+        logger.error(f'Ошибка при инициализации базы данных: {str(e)}', exc_info=True)
+        return False
 
 @app.route('/')
 def index():
@@ -86,12 +111,24 @@ def handle_command():
             'error': str(e)
         }), 500
 
+@app.errorhandler(Exception)
+def handle_error(error):
+    logger.error(f'Необработанная ошибка: {str(error)}', exc_info=True)
+    return jsonify({
+        'status': 'error',
+        'message': 'Внутренняя ошибка сервера',
+        'error': str(error)
+    }), 500
+
 if __name__ == '__main__':
     try:
         logger.info('Запуск приложения...')
-        init_db()
+        if not init_db():
+            logger.error('Не удалось инициализировать базу данных')
+            exit(1)
+            
         logger.info('Запуск Flask сервера на порту 5000...')
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)
     except Exception as e:
-        logger.error(f'Критическая ошибка при запуске приложения: {e}', exc_info=True)
-        raise
+        logger.error(f'Критическая ошибка при запуске приложения: {str(e)}', exc_info=True)
+        exit(1)
