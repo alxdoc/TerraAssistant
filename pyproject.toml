@@ -1,0 +1,13 @@
+[project]
+name = "repl-nix-terraassistant"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.11"
+dependencies = [
+    "email-validator>=2.2.0",
+    "flask>=3.1.0",
+    "flask-sqlalchemy>=3.1.1",
+    "psycopg2-binary>=2.9.10",
+    "scikit-learn>=1.6.0",
+    "speechrecognition>=3.11.0",
+]

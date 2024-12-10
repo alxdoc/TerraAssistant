@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ТЕРРА - Голосовой бизнес-ассистент</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+</head>
+<body>
+    <div class="container py-4">
+        <header class="text-center mb-4">
+            <h1>ТЕРРА</h1>
+            <p class="lead">Голосовой бизнес-ассистент</p>
+        </header>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="status-indicator text-center">
+                            <span id="status">Ожидание</span>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-3 command-buttons">
+                            <button id="startBtn" class="btn btn-primary mic-button">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <button id="stopBtn" class="btn btn-danger mic-button">
+                                <i class="fas fa-microphone-slash"></i>
+                            </button>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <p>Скажите "ТЕРРА" и затем вашу команду</p>
+                        </div>
+
+                        <div id="result-container" class="result-container">
+                            <!-- Результаты команд будут добавляться здесь -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/commands.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+</body>
+</html>
