@@ -27,21 +27,36 @@ class CommandProcessor:
     def process_command(self, command_type: str, entities: Dict) -> str:
         """Обрабатывает команду"""
         try:
-            logger.debug(f"Обработка команды типа: {command_type} с сущностями: {entities}")
+            logger.info(f"Начало обработки команды типа: {command_type}")
+            logger.debug(f"Сущности команды: {entities}")
             
-            if command_type == 'greeting':
-                return self.handle_greeting()
-            elif command_type == 'task_creation':
-                return self.handle_task_creation(entities)
-            elif command_type == 'document_analysis':
-                return self.handle_document_analysis(entities)
-            elif command_type == 'search':
-                return self.handle_search(entities)
+            # Проверяем валидность типа команды
+            if not command_type:
+                logger.warning("Получен пустой тип команды")
+                return self.response_templates['unknown'][0]
+            
+            # Обработка различных типов команд
+            handlers = {
+                'greeting': self.handle_greeting,
+                'task_creation': lambda: self.handle_task_creation(entities),
+                'document_analysis': lambda: self.handle_document_analysis(entities),
+                'search': lambda: self.handle_search(entities)
+            }
+            
+            # Получаем обработчик для данного типа команды
+            handler = handlers.get(command_type)
+            
+            if handler:
+                logger.debug(f"Найден обработчик для команды типа: {command_type}")
+                response = handler()
+                logger.info(f"Команда успешно обработана. Ответ: {response}")
+                return response
             else:
+                logger.warning(f"Неизвестный тип команды: {command_type}")
                 return self.response_templates['unknown'][0]
                 
         except Exception as e:
-            logger.error(f"Ошибка при обработке команды: {str(e)}")
+            logger.error(f"Ошибка при обработке команды: {str(e)}", exc_info=True)
             return self.format_error(str(e))
 
     def handle_greeting(self) -> str:

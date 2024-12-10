@@ -283,14 +283,45 @@ class VoiceAssistant {
             return;
         }
         
-        if (text.toLowerCase().includes('терра')) {
-            const command = text.toLowerCase().replace('терра', '').trim();
+        // Нормализуем текст для более надежного распознавания
+        const normalizedText = text.toLowerCase().trim();
+        console.log('Normalized text:', normalizedText);
+        
+        // Проверяем наличие ключевого слова в любой форме
+        if (normalizedText.includes('терра') || normalizedText.includes('terra')) {
+            // Извлекаем команду, убирая все варианты ключевого слова
+            let command = normalizedText
+                .replace(/терра|terra/gi, '')
+                .trim();
+                
+            console.log('Extracted command:', command);
+            
             if (command) {
                 console.log('Valid command detected:', command);
                 const commandType = detectCommandType(command);
                 console.log('Detected command type:', commandType);
+                
                 this.updateStatus('Обработка команды...', 'processing');
-                this.executeCommand(command, commandType);
+                this.executeCommand(command, commandType)
+                    .then(() => {
+                        // После успешной обработки команды автоматически возобновляем прослушивание
+                        setTimeout(() => {
+                            if (!this.isListening) {
+                                console.log('Auto-restarting listening after command processing');
+                                this.start();
+                            }
+                        }, 1000);
+                    })
+                    .catch(error => {
+                        console.error('Command execution error:', error);
+                        this.updateStatus('Ошибка при выполнении команды', 'error');
+                        // Также пробуем перезапустить прослушивание после ошибки
+                        setTimeout(() => {
+                            if (!this.isListening) {
+                                this.start();
+                            }
+                        }, 2000);
+                    });
             } else {
                 console.log('Empty command after keyword');
                 this.updateStatus('Команда не распознана', 'error');
@@ -298,10 +329,20 @@ class VoiceAssistant {
                     command_type: 'error',
                     result: 'Пожалуйста, произнесите команду после слова "ТЕРРА"'
                 });
+                // Перезапускаем прослушивание после ошибки
+                setTimeout(() => {
+                    if (!this.isListening) {
+                        this.start();
+                    }
+                }, 2000);
             }
         } else {
-            console.log('Keyword "терра" not found in:', text);
-            this.updateStatus('Ожидание команды', 'ready');
+            console.log('Keyword not found in:', normalizedText);
+            this.updateStatus('Ожидание команды со словом "ТЕРРА"', 'ready');
+            // Продолжаем слушать, если ключевое слово не найдено
+            if (!this.isListening) {
+                setTimeout(() => this.start(), 1000);
+            }
         }
     }
 

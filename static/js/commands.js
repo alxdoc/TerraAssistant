@@ -56,18 +56,24 @@ function detectCommandType(text) {
     console.log('Detecting command type for:', text);
     
     // Удаляем ключевое слово "терра" из текста, если оно есть
-    text = text.replace(/терра/gi, '').trim();
+    text = text.replace(/терра|terra/gi, '').trim();
     console.log('Text after removing keyword:', text);
+    
+    // Проверяем на приветствие перед основной обработкой
+    const greetings = ['привет', 'здравствуй', 'добр', 'хай', 'hello'];
+    for (const greeting of greetings) {
+        if (text.toLowerCase().startsWith(greeting)) {
+            console.log('Greeting detected:', text);
+            return 'greeting';
+        }
+    }
     
     // Проверяем каждый тип команды
     for (const [type, patterns] of Object.entries(CommandPatterns)) {
         console.log(`Checking patterns for type ${type}:`, patterns);
         for (const pattern of patterns) {
-            const normalizedPattern = normalizeText(pattern);
-            // Используем более гибкое сравнение
-            if (text.includes(normalizedPattern) || 
-                normalizedPattern.includes(text) ||
-                levenshteinDistance(text, normalizedPattern) <= 2) {
+            // Используем улучшенное сравнение строк
+            if (compareStrings(text, pattern)) {
                 console.log(`Match found for type ${type} with pattern:`, pattern);
                 return type;
             }
@@ -81,6 +87,28 @@ function detectCommandType(text) {
     
     console.log('No matching command type found, returning unknown');
     return CommandTypes.UNKNOWN;
+}
+
+// Улучшенная функция для сравнения строк с поддержкой русского языка
+function compareStrings(str1, str2) {
+    // Нормализуем строки
+    str1 = str1.toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/[^а-яa-z0-9\s]/g, '')
+        .trim();
+    str2 = str2.toLowerCase()
+        .replace(/ё/g, 'е')
+        .replace(/[^а-яa-z0-9\s]/g, '')
+        .trim();
+
+    // Если строки короткие, используем точное сравнение
+    if (str1.length < 4 || str2.length < 4) {
+        return str1 === str2;
+    }
+
+    // Для длинных строк используем расстояние Левенштейна
+    const maxDistance = Math.floor(Math.max(str1.length, str2.length) * 0.3); // 30% tolerance
+    return levenshteinDistance(str1, str2) <= maxDistance;
 }
 
 // Функция для вычисления расстояния Левенштейна
