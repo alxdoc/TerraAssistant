@@ -157,18 +157,37 @@ class VoiceAssistant {
 
     processVoiceInput(text) {
         console.log('Processing voice input:', text);
-        if (text.includes('терра')) {
-            const command = text.replace('терра', '').trim();
+        if (!text) {
+            console.log('Empty text received');
+            return;
+        }
+        
+        if (text.toLowerCase().includes('терра')) {
+            const command = text.toLowerCase().replace('терра', '').trim();
             if (command) {
+                console.log('Valid command detected:', command);
                 this.updateStatus('Обработка команды...', 'processing');
                 this.executeCommand(command);
+            } else {
+                console.log('Empty command after keyword');
+                this.updateStatus('Команда не распознана', 'error');
+                this.displayResult({
+                    command_type: 'error',
+                    result: 'Пожалуйста, произнесите команду после слова "ТЕРРА"'
+                });
             }
+        } else {
+            console.log('Keyword "терра" not found in:', text);
+            this.updateStatus('Ожидание команды', 'ready');
         }
     }
 
     async executeCommand(command) {
         console.log('Executing command:', command);
         try {
+            this.updateStatus('Отправка команды...', 'processing');
+            console.log('Sending request to server...');
+            
             const response = await fetch('/process_command', {
                 method: 'POST',
                 headers: {
@@ -177,17 +196,32 @@ class VoiceAssistant {
                 body: JSON.stringify({ text: command })
             });
             
+            console.log('Server response status:', response.status);
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Server error response:', errorText);
+                throw new Error(`Ошибка сервера: ${response.status}`);
             }
             
             const result = await response.json();
             console.log('Command execution result:', result);
+            
+            if (result.status === 'error') {
+                throw new Error(result.error || 'Неизвестная ошибка');
+            }
+            
             this.displayResult(result);
             this.updateStatus('Готов к работе', 'ready');
         } catch (error) {
             console.error('Error executing command:', error);
-            this.updateStatus('Ошибка выполнения команды', 'error');
+            this.updateStatus(`Ошибка: ${error.message}`, 'error');
+            
+            // Показываем ошибку пользователю
+            this.displayResult({
+                command_type: 'error',
+                result: `Произошла ошибка: ${error.message}`
+            });
         }
     }
 
@@ -202,14 +236,63 @@ class VoiceAssistant {
 
     displayResult(result) {
         console.log('Displaying result:', result);
-        const resultContainer = document.getElementById('result-container');
-        const resultElement = document.createElement('div');
-        resultElement.className = 'alert alert-info mt-3';
-        resultElement.innerHTML = `
-            <h5>Тип команды: ${result.command_type}</h5>
-            <p>${result.result}</p>
-        `;
-        resultContainer.prepend(resultElement);
+        try {
+            const resultContainer = document.getElementById('result-container');
+            if (!resultContainer) {
+                console.error('Result container not found');
+                return;
+            }
+
+            const resultElement = document.createElement('div');
+            
+            // Определяем тип оповещения на основе статуса
+            const alertType = result.status === 'error' ? 'alert-danger' : 'alert-info';
+            resultElement.className = `alert ${alertType} mt-3`;
+            
+            // Форматируем тип команды для отображения
+            const commandTypeDisplay = {
+                'task_creation': 'Создание задачи',
+                'document_analysis': 'Анализ документа',
+                'search': 'Поиск',
+                'report': 'Отчёт',
+                'unknown': 'Неизвестная команда',
+                'error': 'Ошибка'
+            }[result.command_type] || result.command_type;
+
+            const icon = result.status === 'error' ? 
+                '<i class="fas fa-exclamation-circle text-danger"></i>' : 
+                '<i class="fas fa-check-circle text-success"></i>';
+
+            resultElement.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="d-flex align-items-start">
+                        <div class="me-2">${icon}</div>
+                        <div>
+                            <h5 class="mb-2">${commandTypeDisplay}</h5>
+                            <p class="mb-0">${result.result || 'Нет результата'}</p>
+                        </div>
+                    </div>
+                    <small class="text-muted">${new Date().toLocaleTimeString()}</small>
+                </div>
+            `;
+            
+            resultContainer.prepend(resultElement);
+            
+            // Плавная анимация появления
+            resultElement.style.opacity = '0';
+            setTimeout(() => {
+                resultElement.style.transition = 'opacity 0.3s ease-in';
+                resultElement.style.opacity = '1';
+            }, 10);
+            
+            // Ограничиваем количество отображаемых результатов
+            while (resultContainer.children.length > 10) {
+                resultContainer.removeChild(resultContainer.lastChild);
+            }
+        } catch (error) {
+            console.error('Error displaying result:', error);
+            this.updateStatus('Ошибка отображения результата', 'error');
+        }
     }
 }
 

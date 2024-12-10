@@ -1,10 +1,17 @@
 import os
 import logging
+from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-from models import db
+from models import db, Command, Task  # Добавляем импорт моделей
 from utils.command_processor import process_command
 from utils.nlp import analyze_text
+
+# Настройка логирования для отладки
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Настройка логирования для отладки
 logging.basicConfig(
@@ -36,11 +43,25 @@ db.init_app(app)
 def init_db():
     """Инициализация базы данных"""
     try:
+        logger.info('Начало инициализации базы данных...')
         with app.app_context():
+            # Проверяем существование таблиц
+            logger.debug('Проверка существующих таблиц...')
+            inspector = db.inspect(db.engine)
+            existing_tables = inspector.get_table_names()
+            logger.debug(f'Существующие таблицы: {existing_tables}')
+            
+            # Создаем таблицы
+            logger.debug('Создание таблиц...')
             db.create_all()
+            
+            # Проверяем созданные таблицы
+            new_tables = inspector.get_table_names()
+            logger.debug(f'Таблицы после создания: {new_tables}')
+            
             logger.info('База данных успешно инициализирована')
     except Exception as e:
-        logger.error(f'Ошибка при инициализации базы данных: {e}')
+        logger.error(f'Ошибка при инициализации базы данных: {e}', exc_info=True)
         raise
 
 @app.route('/')
@@ -63,6 +84,7 @@ def handle_command():
         logger.debug('Получен POST запрос к /process_command')
         logger.debug(f'Заголовки запроса: {dict(request.headers)}')
         logger.debug(f'Тело запроса: {request.get_data(as_text=True)}')
+        logger.info('Начало обработки голосовой команды')
         
         if not request.is_json:
             logger.error('Получен не JSON запрос')
@@ -79,15 +101,23 @@ def handle_command():
         logger.debug(f'Тип команды: {command_type}, сущности: {entities}')
         
         # Обработка команды
-        result = process_command(command_type, entities)
-        logger.debug(f'Результат обработки: {result}')
-        
-        response = jsonify({
-            'status': 'success',
-            'command_type': command_type,
-            'result': result
-        })
-        return response
+        try:
+            result = process_command(command_type, entities)
+            logger.debug(f'Результат обработки: {result}')
+            
+            response = jsonify({
+                'status': 'success',
+                'command_type': command_type,
+                'result': result,
+                'timestamp': datetime.now().isoformat()
+            })
+            return response
+        except Exception as e:
+            logger.error(f'Ошибка при обработке команды: {str(e)}')
+            return jsonify({
+                'status': 'error',
+                'error': 'Ошибка при обработке команды: ' + str(e)
+            }), 500
         
     except Exception as e:
         logger.error(f'Ошибка при обработке команды: {e}', exc_info=True)
@@ -96,8 +126,7 @@ def handle_command():
             'error': str(e)
         }), 500
 
-# Инициализация базы данных при создании приложения
-init_db()
+# Примечание: init_db() будет вызываться из main.py
 
 if __name__ == '__main__':
     logger.info("Запуск Flask сервера...")
