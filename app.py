@@ -2,41 +2,47 @@ import logging
 import os
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-from models import db, Command
+from models import db, Command, init_db
 from utils.command_processor import process_command
 from utils.nlp import analyze_text, DialogContext
 
 # Настройка логирования
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def create_app():
     """Create and configure the Flask application"""
     try:
-        logger.info("Starting application creation...")
-        app = Flask(__name__)
+        logger.info("Starting create_app()")
+        app = Flask(__name__, instance_relative_config=True)
+        logger.info("Flask app instance created")
         
-        # Базовая конфигурация
+        # Создаем директорию для базы данных
+        try:
+            os.makedirs(app.instance_path)
+            logger.info(f"Created instance directory at {app.instance_path}")
+        except OSError:
+            logger.info("Instance directory already exists")
+
+        # Конфигурация приложения
         app.config.update(
             SECRET_KEY=os.getenv('SECRET_KEY', 'dev-key-1234'),
-            SQLALCHEMY_DATABASE_URI='sqlite:///instance/terra.db',
+            SQLALCHEMY_DATABASE_URI=f'sqlite:///{os.path.join(app.instance_path, "terra.db")}',
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
             TEMPLATES_AUTO_RELOAD=True
         )
         
         # Инициализация расширений
         CORS(app)
-        db.init_app(app)
         
-        # Создание таблиц БД и контекста диалога
+        logger.info("Initializing application context")
         with app.app_context():
-            db.create_all()
+            logger.info("Initializing database")
+            init_db(app)
+            logger.info("Initializing dialog context")
             app.dialog_context = DialogContext()
-            logger.info("Application initialized successfully")
-
+            logger.info("Application context initialization completed")
+        
         @app.route('/')
         def index():
             """Главная страница"""
@@ -79,14 +85,6 @@ def create_app():
                 # Анализ команды
                 command_type, entities = analyze_text(text, app.dialog_context)
                 logger.info(f"Тип команды: {command_type}, сущности: {entities}")
-
-                # Проверка на неизвестную команду
-                if command_type == 'unknown':
-                    return jsonify({
-                        'status': 'error',
-                        'command_type': 'unknown',
-                        'error': 'Не удалось распознать команду'
-                    }), 200
 
                 # Обработка команды
                 result = process_command(command_type, entities)
