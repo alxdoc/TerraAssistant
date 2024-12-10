@@ -22,9 +22,14 @@ def main():
         # Создаем и настраиваем приложение
         app = create_app()
         
-        # Запускаем сервер
+        # Запускаем сервер с явными настройками для Replit
         logger.info("Starting the Flask server on port 5000...")
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        app.run(
+            host='0.0.0.0',  # Разрешаем внешние подключения
+            port=5000,       # Используем порт 5000
+            debug=True,      # Включаем режим отладки
+            use_reloader=True  # Включаем автоперезагрузку
+        )
         
     except Exception as e:
         logger.error(f"Failed to start the server: {str(e)}", exc_info=True)

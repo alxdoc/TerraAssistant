@@ -1,6 +1,6 @@
 import logging
 import os
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, current_app
 from flask_cors import CORS
 from models import db, Command, init_db
 from utils.command_processor import process_command
@@ -14,8 +14,24 @@ def create_app():
     """Create and configure the Flask application"""
     try:
         logger.info("Starting create_app()")
-        app = Flask(__name__, instance_relative_config=True)
+        
+        # Создаем приложение с явным указанием статических файлов
+        app = Flask(__name__,
+                   instance_relative_config=True,
+                   static_url_path='/static',
+                   static_folder='static')
+        
         logger.info("Flask app instance created")
+        logger.info(f"Static folder: {app.static_folder}")
+        logger.info(f"Static URL path: {app.static_url_path}")
+        
+        # Создаем директорию для базы данных
+        try:
+            os.makedirs(app.instance_path)
+            logger.info(f"Created instance directory at {app.instance_path}")
+        except OSError:
+            logger.info("Instance directory already exists")
+            pass
         
         # Создаем директорию для базы данных
         try:
@@ -31,18 +47,43 @@ def create_app():
             SQLALCHEMY_TRACK_MODIFICATIONS=False,
             TEMPLATES_AUTO_RELOAD=True
         )
+        logger.info("Application configuration completed")
         
         # Инициализация расширений
+        logger.info("Initializing CORS")
         CORS(app)
+        logger.info("CORS initialized")
         
+        # Инициализация базы данных и контекста диалога
         logger.info("Initializing application context")
+        db.init_app(app)
+        logger.info("Database extension initialized")
+        
         with app.app_context():
-            logger.info("Initializing database")
-            init_db(app)
+            logger.info("Creating database tables")
+            db.create_all()
+            logger.info("Database tables created successfully")
+            
             logger.info("Initializing dialog context")
             app.dialog_context = DialogContext()
-            logger.info("Application context initialization completed")
+            logger.info("Dialog context initialized")
+            
+        logger.info("Application context initialization completed")
         
+        @app.before_request
+        def log_request_info():
+            """Логирование информации о каждом запросе"""
+            logger.debug('Headers: %s', request.headers)
+            logger.debug('Body: %s', request.get_data())
+            logger.debug('Path: %s', request.path)
+
+        @app.after_request
+        def after_request(response):
+            """Добавляем необходимые заголовки для CORS"""
+            logger.debug('Response Status: %s', response.status)
+            logger.debug('Response Headers: %s', response.headers)
+            return response
+
         @app.route('/')
         def index():
             """Главная страница"""

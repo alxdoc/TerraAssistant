@@ -8,9 +8,14 @@ db = SQLAlchemy()
 def init_db(app):
     """Initialize the database with the application"""
     try:
+        logger.info("Initializing database...")
         db.init_app(app)
-        db.create_all()
-        logger.info("Database tables created successfully")
+        
+        # Создаем все таблицы в контексте приложения
+        with app.app_context():
+            db.create_all()
+            logger.info("Database tables created successfully")
+            
     except Exception as e:
         logger.error(f"Failed to initialize database: {str(e)}", exc_info=True)
         raise
