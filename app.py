@@ -3,16 +3,9 @@ import logging
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
-from models import db, Command, Task
+from models import db, Command, Task, init_db
 from utils.command_processor import process_command
 from utils.nlp import analyze_text, DialogContext
-
-# Настройка логирования
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-# Инициализация глобального контекста диалога
-dialog_context = DialogContext()
 
 # Настройка логирования
 logging.basicConfig(
@@ -24,7 +17,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 # Создание и настройка приложения
 app = Flask(__name__)
@@ -32,37 +24,25 @@ app = Flask(__name__)
 # Конфигурация CORS
 CORS(app)
 
-# Конфигурация базы данных
+# Создаем директорию для базы данных
+instance_path = os.path.join(os.getcwd(), 'instance')
+os.makedirs(instance_path, exist_ok=True)
+
+# Конфигурация базы данных и приложения
 app.config.update(
-    SECRET_KEY="terra_assistant_key",
-    SQLALCHEMY_DATABASE_URI="sqlite:///terra.db",
+    SECRET_KEY=os.environ.get('SECRET_KEY', 'terra_assistant_key'),
+    SQLALCHEMY_DATABASE_URI=f'sqlite:///{os.path.join(instance_path, "terra.db")}',
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     TEMPLATES_AUTO_RELOAD=True,
-    CORS_HEADERS='Content-Type')
+    CORS_HEADERS='Content-Type'
+)
 
-# Инициализация базы данных
-db.init_app(app)
+# Инициализация базы данных и подключение к приложению
+init_db(app)
 
-def init_db():
-    """Инициализация базы данных"""
-    try:
-        logger.debug('Начало инициализации базы данных...')
-        if not os.path.exists(instance_path):
-            logger.error(f'Директория {instance_path} не существует')
-            return False
-            
-        with app.app_context():
-            logger.debug('Проверка соединения с базой данных...')
-            db.engine.connect()
-            logger.debug('Соединение с базой данных успешно')
-            
-            logger.debug('Создание всех таблиц...')
-            db.create_all()
-            logger.info('База данных успешно инициализирована')
-            return True
-    except Exception as e:
-        logger.error(f'Ошибка при инициализации базы данных: {str(e)}', exc_info=True)
-        return False
+# Инициализация глобального контекста диалога
+dialog_context = DialogContext()
+logger.info('Application initialized successfully')
 
 @app.route('/')
 def index():

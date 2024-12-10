@@ -78,8 +78,15 @@ class VoiceAssistant {
                 if (this.isListening) {
                     console.log('Auto-stopping recognition after timeout');
                     this.stop();
+                    // Автоматически перезапускаем прослушивание
+                    setTimeout(() => {
+                        if (!this.isListening) {
+                            console.log('Auto-restarting recognition');
+                            this.start();
+                        }
+                    }, 1000);
                 }
-            }, 10000); // 10 секунд на распознавание
+            }, 30000); // 30 секунд на распознавание
         };
 
         this.recognition.onend = () => {
@@ -118,35 +125,57 @@ class VoiceAssistant {
                 if (event.results && event.results.length > 0) {
                     const result = event.results[event.results.length - 1];
                     if (result.isFinal) {
-                        const text = result[0].transcript.trim().toLowerCase();
+                        const text = result[0].transcript.trim();
                         console.log('Recognized text:', text);
+                        
                         if (text) {
-                            // Добавляем логирование для отладки
                             console.log('Processing voice input:', text);
-                            // Проверяем наличие ключевого слова независимо от регистра
-                            if (text.toLowerCase().includes('терра')) {
-                                const command = text.toLowerCase().replace(/терра/gi, '').trim();
+                            
+                            // Проверяем наличие ключевого слова в любом регистре
+                            const terraRegex = /терра|terra/i;
+                            if (terraRegex.test(text)) {
+                                // Извлекаем команду, убирая ключевое слово
+                                const command = text.replace(terraRegex, '').trim();
                                 console.log('Extracted command:', command);
-                                this.processVoiceInput(text);
+                                
+                                if (command) {
+                                    this.processVoiceInput(text);
+                                    // Автоматически продолжаем слушать
+                                    setTimeout(() => {
+                                        if (!this.isListening) {
+                                            console.log('Restarting recognition after command');
+                                            this.start();
+                                        }
+                                    }, 1000);
+                                } else {
+                                    console.log('Empty command after keyword');
+                                    this.updateStatus('Ожидание команды после слова "ТЕРРА"', 'ready');
+                                }
                             } else {
-                                console.log('Keyword "терра" not found in:', text);
+                                console.log('Keyword not found in:', text);
                                 this.updateStatus('Ожидание команды со словом "ТЕРРА"', 'ready');
                             }
                         } else {
-                            console.error('Empty recognition result');
+                            console.log('Empty recognition result');
                             this.updateStatus('Не удалось распознать речь', 'error');
                         }
                     }
-                } else {
-                    console.error('No results in recognition event');
-                    this.updateStatus('Не удалось распознать речь', 'error');
                 }
             } catch (error) {
                 console.error('Error processing recognition result:', error);
                 this.updateStatus('Ошибка обработки распознанной речи', 'error');
-                // Восстанавливаем состояние кнопок
+                
+                // Восстанавливаем состояние и пробуем перезапустить
+                this.isListening = false;
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
+                
+                setTimeout(() => {
+                    if (!this.isListening) {
+                        console.log('Attempting to restart after error');
+                        this.start();
+                    }
+                }, 2000);
             }
         };
 
@@ -180,33 +209,44 @@ class VoiceAssistant {
     async start() {
         console.log('Starting recognition...');
         const startBtn = document.getElementById('startBtn');
-        startBtn.disabled = true;
-        document.getElementById('status').textContent = 'Инициализация...';
+        const stopBtn = document.getElementById('stopBtn');
         
         try {
+            startBtn.disabled = true;
+            this.updateStatus('Инициализация...', 'processing');
+            
             if (!this.hasPermission) {
                 console.log('Requesting microphone permission...');
                 await this.checkMicrophonePermission();
             }
             
             if (this.isListening) {
-                console.log('Already listening');
-                return;
+                console.log('Already listening, stopping current session...');
+                await this.stop();
+                await new Promise(resolve => setTimeout(resolve, 500)); // Небольшая пауза
             }
             
-            await this.recognition.start();
+            console.log('Starting new recognition session...');
+            this.recognition.start();
             console.log('Recognition started successfully');
             
-            document.getElementById('stopBtn').disabled = false;
+            this.isListening = true;
+            stopBtn.disabled = false;
             startBtn.classList.add('listening');
             this.updateStatus('Слушаю...', 'listening');
+            
         } catch (error) {
             console.error('Error starting recognition:', error);
             this.updateStatus('Ошибка запуска распознавания: ' + error.message, 'error');
             this.isListening = false;
             startBtn.disabled = false;
             startBtn.classList.remove('listening');
-            document.getElementById('stopBtn').disabled = true;
+            stopBtn.disabled = true;
+            
+            // Пробуем перезапустить через небольшую паузу при определенных ошибках
+            if (error.name === 'NotAllowedError' || error.name === 'NotFoundError') {
+                setTimeout(() => this.initialize(), 2000);
+            }
         }
     }
 
