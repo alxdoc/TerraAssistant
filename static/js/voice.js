@@ -5,17 +5,30 @@ class VoiceAssistant {
         this.hasPermission = false;
         
         try {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                throw new Error('Speech Recognition API not supported');
+            // Проверяем поддержку Web Speech API
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                throw new Error('Speech Recognition API не поддерживается в этом браузере');
             }
-            console.log('Speech Recognition API supported');
+            
+            // Инициализируем распознавание речи
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            console.log('Speech Recognition API supported, initializing...');
             
             this.recognition = new SpeechRecognition();
+            
+            // Настраиваем параметры
             this.recognition.lang = 'ru-RU';
-            this.recognition.continuous = true;
-            this.recognition.interimResults = true;
+            this.recognition.continuous = false; // Изменено на false для более надежной работы
+            this.recognition.interimResults = false; // Изменено на false для стабильности
             this.recognition.maxAlternatives = 1;
+            
+            // Логируем конфигурацию
+            console.log('Recognition initialized with config:', {
+                lang: this.recognition.lang,
+                continuous: this.recognition.continuous,
+                interimResults: this.recognition.interimResults,
+                maxAlternatives: this.recognition.maxAlternatives
+            });
             
             console.log('Recognition configured with params:', {
                 lang: this.recognition.lang,
@@ -310,9 +323,24 @@ class VoiceAssistant {
         const stopBtn = document.getElementById('stopBtn');
         
         try {
-            // Проверяем поддержку API
-            if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+            // Деактивируем кнопку старта
+            if (startBtn) startBtn.disabled = true;
+            
+            // Проверяем поддержку API еще раз
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
                 throw new Error('Speech Recognition API не поддерживается в этом браузере');
+            }
+            
+            // Запрашиваем разрешение на использование микрофона
+            if (!this.hasPermission) {
+                this.updateStatus('Запрос доступа к микрофону...', 'processing');
+                await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
             }
             
             startBtn.disabled = true;
