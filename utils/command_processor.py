@@ -26,15 +26,18 @@ def format_task_creation(description: str) -> str:
     for keyword, level in priority_keywords.items():
         if any(word.startswith(keyword.lower()) for word in description_lower.split()):
             priority = level
-            # Удаляем ключевое слово приоритета из текста
-            description = re.sub(rf'\b\w*{keyword}\w*\b\s*', '', description, flags=re.IGNORECASE)
             break
 
-    # Очищаем описание от лишних слов и символов
+    # Сначала удаляем слова о приоритете, сохраняя их значение
+    for keyword in priority_keywords:
+        description = re.sub(rf'\b\w*{keyword}\w*\b\s*(задач[ау]?)?\s*', '', description, flags=re.IGNORECASE)
+    
+    # Затем очищаем описание от лишних слов и символов
     description = re.sub(r'^(тер[ар]а?|terra)\s*[,]?\s*', '', description, flags=re.IGNORECASE)
     description = re.sub(r'^(ты\s+)?(рас)?созда[йтьев]+\s*[,\s–-]*', '', description, flags=re.IGNORECASE)
     description = re.sub(r'^(добав[иь]т?ь?|сдела[йть])\s*[,\s–-]*', '', description, flags=re.IGNORECASE)
     description = re.sub(r'^[,\s–-]+', '', description)  # Удаляем начальные разделители
+    description = re.sub(r'\s+', ' ', description)  # Нормализуем пробелы
     description = description.strip()
     
     # Поиск даты в описании
