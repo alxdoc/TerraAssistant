@@ -210,6 +210,38 @@ def format_business_command(command_type: str, description: str) -> str:
     # Очищаем описание от служебных слов
     for word in income_words + expense_words:
         description = re.sub(rf'\b{word}\w*\b', '', description, flags=re.IGNORECASE)
+    
+    # Обработка проектных команд
+    if command_type == 'project':
+        # Поиск статуса проекта
+        status_words = {
+            'новый': 'Новый',
+            'в работе': 'В работе',
+            'на паузе': 'На паузе',
+            'завершен': 'Завершён',
+            'отменен': 'Отменён'
+        }
+        
+        for word, status in status_words.items():
+            if word in description.lower():
+                params['status'] = status
+                description = re.sub(rf'\b{word}\b', '', description, flags=re.IGNORECASE)
+        
+        # Поиск приоритета
+        priority_words = {
+            'срочно': 'Высокий',
+            'срочный': 'Высокий',
+            'важно': 'Высокий',
+            'критично': 'Критический',
+            'обычный': 'Обычный',
+            'низкий': 'Низкий'
+        }
+        
+        for word, priority in priority_words.items():
+            if word in description.lower():
+                params['priority'] = priority
+                description = re.sub(rf'\b{word}\b', '', description, flags=re.IGNORECASE)
+    
     description = ' '.join(description.split())
     
     # Ищем сроки
@@ -290,15 +322,14 @@ def format_business_command(command_type: str, description: str) -> str:
         },
         'project': {
             'icon': '📊',
-            'action': 'Работаю с проектом',
-            'category': 'Управление проектами',
-            'extra_info': lambda p: '\n'.join(filter(None, [
-                f"📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else '',
-                f"🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else '',
-                f"📊 Статус: {p.get('status', 'новый').replace('_', ' ').capitalize()}" if 'status' in p else '',
-                f"👥 Команда: {p.get('team', 'Не назначена')}" if 'team' in p else '',
-                f"📍 Этап: {p.get('stage', 'Начальный')}" if 'stage' in p else ''
-            ]))
+            'action': 'Проектная задача',
+            'extra_info': lambda p: '\n'.join([
+                f"📝 Описание: {description.strip().capitalize()}",
+                f"🎯 Приоритет: {p.get('priority', 'Обычный')}",
+                f"📊 Статус: {p.get('status', 'Новый')}",
+                f"📅 Срок: {p.get('deadline', 'Не указан')}",
+                "✨ Проект зарегистрирован"
+            ])
         },
         'analytics': {
             'icon': '📈',
