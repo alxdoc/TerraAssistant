@@ -1,12 +1,20 @@
-from flask import Flask, render_template, jsonify, request
 import logging
 import os
 import tempfile
+from flask import Flask, render_template, jsonify, request
 from openai import OpenAI
 from flask_cors import CORS
 from utils.nlp import DialogContext
 from utils.command_processor import process_command
 from models import init_db
+
+# Настройка логирования для внешних библиотек
+logging.getLogger('werkzeug').setLevel(logging.INFO)
+logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
+
+# Настройка логирования для внешних библиотек
+logging.getLogger('werkzeug').setLevel(logging.INFO)
+logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
 
 # Настройка логирования
 logging.basicConfig(

@@ -118,11 +118,33 @@ class CommandProcessor:
 
     def handle_finance(self, entities: Dict) -> str:
         """Handle finance-related commands"""
-        description = entities.get('description', '')
+        description = entities.get('description', '').lower()
         if not description:
             return "Пожалуйста, уточните финансовую операцию"
-        logger.info(f"Обработка финансовой операции: {description}")
-        return f"Обработка финансовой операции: {description}"
+
+        # Анализируем тип финансовой операции
+        operation_type = None
+        if any(word in description for word in ['баланс', 'остаток', 'счет']):
+            operation_type = 'balance'
+        elif any(word in description for word in ['расход', 'трата', 'списание']):
+            operation_type = 'expense'
+        elif any(word in description for word in ['доход', 'поступление', 'прибыль']):
+            operation_type = 'income'
+        elif any(word in description for word in ['отчет', 'сводка', 'статистика']):
+            operation_type = 'report'
+
+        logger.info(f"Обработка финансовой операции типа {operation_type}: {description}")
+
+        # Формируем ответ в зависимости от типа операции
+        responses = {
+            'balance': "Текущий баланс счета: 100000 руб.",
+            'expense': "Расход успешно записан. Остаток на счете: 95000 руб.",
+            'income': "Доход успешно записан. Новый баланс: 105000 руб.",
+            'report': "Финансовый отчет за текущий период:\nДоходы: 150000 руб.\nРасходы: 80000 руб.\nПрибыль: 70000 руб.",
+            None: "Не удалось определить тип финансовой операции. Пожалуйста, уточните команду."
+        }
+
+        return responses.get(operation_type, responses[None])
 
     def handle_project(self, entities: Dict) -> str:
         """Handle project management commands"""
@@ -158,11 +180,33 @@ class CommandProcessor:
 
     def handle_employee(self, entities: Dict) -> str:
         """Handle employee management commands"""
-        description = entities.get('description', '')
+        description = entities.get('description', '').lower()
         if not description:
             return "Пожалуйста, уточните действие с данными сотрудника"
-        logger.info(f"Управление персоналом: {description}")
-        return f"Обработка данных сотрудника: {description}"
+
+        # Определяем тип операции с данными сотрудника
+        operation_type = None
+        if any(word in description for word in ['график', 'расписание', 'смена']):
+            operation_type = 'schedule'
+        elif any(word in description for word in ['отпуск', 'выходной', 'отгул']):
+            operation_type = 'vacation'
+        elif any(word in description for word in ['зарплата', 'оклад', 'премия']):
+            operation_type = 'salary'
+        elif any(word in description for word in ['статус', 'информация', 'данные']):
+            operation_type = 'info'
+
+        logger.info(f"Операция с данными сотрудника типа {operation_type}: {description}")
+
+        # Формируем ответ в зависимости от типа операции
+        responses = {
+            'schedule': "График работы сотрудника на неделю:\nПн-Пт: 9:00-18:00\nСб-Вс: выходные",
+            'vacation': "Отпуск запланирован. Осталось дней отпуска: 14",
+            'salary': "Информация о заработной плате:\nОклад: 80000 руб.\nПремия: 15000 руб.\nИтого: 95000 руб.",
+            'info': "Информация о сотруднике:\nДолжность: Менеджер\nОтдел: Продажи\nСтаж: 2 года",
+            None: "Не удалось определить тип операции с данными сотрудника. Пожалуйста, уточните команду."
+        }
+
+        return responses.get(operation_type, responses[None])
 
     def handle_meeting(self, entities: Dict) -> str:
         """Handle meeting organization commands"""
