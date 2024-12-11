@@ -113,11 +113,90 @@ class CommandProcessor:
         
         if command_type == 'task_creation':
             return format_task_creation(entities.get('description', ''))
+            
+        # Обработка бизнес-команд
+        business_commands = [
+            'marketing', 'client', 'supplier', 'contract',
+            'quality', 'risk', 'strategy', 'compliance',
+            'innovation', 'document', 'search', 'contact'
+        ]
+        
+        if command_type in business_commands:
+            return format_business_command(command_type, entities.get('description', ''))
         
         return "Извините, я не распознал команду. Пожалуйста, попробуйте переформулировать."
 
 # Create a singleton instance
 command_processor = CommandProcessor()
+
+def format_business_command(command_type: str, description: str) -> str:
+    """Format business command response"""
+    if not description:
+        return f"Пожалуйста, укажите описание для команды типа {command_type}"
+    
+    # Очищаем описание от служебных слов
+    cleaners = [
+        r't?[еэ]рр?а?[,]?\s*',
+        r'^[\s,\-–]+',
+        r'[\s,\-–]+$'
+    ]
+    
+    for pattern in cleaners:
+        description = re.sub(pattern, '', description, flags=re.IGNORECASE)
+    
+    # Форматируем ответ в зависимости от типа команды
+    responses = {
+        'marketing': {
+            'icon': '📢',
+            'action': 'Создаю маркетинговую задачу',
+            'category': 'Маркетинг'
+        },
+        'client': {
+            'icon': '👥',
+            'action': 'Создаю запись клиента',
+            'category': 'Клиенты'
+        },
+        'supplier': {
+            'icon': '🏭',
+            'action': 'Создаю запись поставщика',
+            'category': 'Поставщики'
+        },
+        'contract': {
+            'icon': '📋',
+            'action': 'Создаю договор',
+            'category': 'Договоры'
+        },
+        'quality': {
+            'icon': '✨',
+            'action': 'Создаю задачу контроля качества',
+            'category': 'Качество'
+        },
+        'risk': {
+            'icon': '⚠️',
+            'action': 'Создаю запись о риске',
+            'category': 'Риски'
+        },
+        'strategy': {
+            'icon': '🎯',
+            'action': 'Создаю стратегическую задачу',
+            'category': 'Стратегия'
+        }
+    }
+    
+    response_info = responses.get(command_type, {
+        'icon': '📝',
+        'action': 'Обрабатываю команду',
+        'category': command_type.capitalize()
+    })
+    
+    response_parts = [
+        f"{response_info['icon']} {response_info['action']}:",
+        f"\n📝 Описание: {description.capitalize()}",
+        f"\n📁 Категория: {response_info['category']}",
+        f"\n✨ Запись успешно создана и добавлена в систему."
+    ]
+    
+    return ''.join(response_parts)
 
 def process_command(command_type: str, entities: Dict) -> str:
     """Global function to process commands"""

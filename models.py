@@ -51,7 +51,24 @@ class Task(db.Model):
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='pending')
     category = db.Column(db.String(50))
+    priority = db.Column(db.String(20), default='normal')
+    due_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f'<Task {self.id}: {self.title}>'
+
+class BusinessEntity(db.Model):
+    """Model for storing business entities like clients, suppliers, etc."""
+    __tablename__ = 'business_entities'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    entity_type = db.Column(db.String(50), nullable=False)  # client, supplier, etc.
+    description = db.Column(db.Text)
+    contact_info = db.Column(db.Text)
+    status = db.Column(db.String(20), default='active')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<BusinessEntity {self.id}: {self.name} ({self.entity_type})>'
