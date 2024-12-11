@@ -10,34 +10,35 @@ def format_task_creation(description: str) -> str:
     """Format task creation response with parsed details"""
     if not description:
         return "Пожалуйста, укажите описание задачи"
-        
-    # Определяем приоритет по ключевым словам в исходном тексте
-    priority = 'обычный'
-    priority_words = {
-        'высокий': ['срочн', 'срочная', 'срочную', 'срочное', 'важн', 'важная', 'важную', 'важное', 'критичн'],
-        'низкий': ['неважн', 'некритичн']
-    }
-
-    # Проверяем приоритет до любой обработки текста
-    text_for_priority = description.lower()
-    logger.debug(f"Анализ приоритета. Исходный текст: '{text_for_priority}'")
-
-    # Проверяем каждое слово текста на совпадение с ключевыми словами приоритета
-    words = text_for_priority.split()
-    for word in words:
-        logger.debug(f"Проверка слова: '{word}'")
-        for level, patterns in priority_words.items():
-            if any(word.startswith(pattern) for pattern in patterns):
-                priority = level
-                logger.debug(f"Найден приоритет '{level}' в слове '{word}'")
-                # Удаляем найденное слово и возможное слово "задача" после него
-                description = re.sub(rf'\b{word}\b\s*(задач[ауи]?)?\s*', '', description, flags=re.IGNORECASE)
-                break
-        if priority != 'обычный':
-            break
     
-    # Затем очищаем описание от лишних слов и символов
-    logger.debug(f"Описание до очистки: {description}")
+    logger.debug(f"Начало обработки задачи. Исходный текст: '{description}'")
+    
+    # Определяем приоритет по ключевым словам
+    priority = 'высокий' if any(word in description.lower() for word in ['срочн', 'важн', 'критичн']) else 'обычный'
+    logger.debug(f"Определён приоритет: {priority}")
+    
+    # Очищаем от служебных слов
+    description = description.lower()
+    patterns = [
+        r'терра\s*[,]?\s*',
+        r'создай\s+',
+        r'создать\s+',
+        r'добавь\s+',
+        r'добавить\s+',
+        r'срочную?\s+',
+        r'важную?\s+',
+        r'критичную?\s+',
+        r'задачу\s+',
+        r'^[\s,\-–]+',
+        r'[\s,\-–]+$'
+    ]
+    
+    # Применяем каждый паттерн и логируем изменения
+    for pattern in patterns:
+        old_desc = description
+        description = re.sub(pattern, '', description, flags=re.IGNORECASE)
+        if old_desc != description:
+            logger.debug(f"Применён паттерн '{pattern}': '{old_desc}' -> '{description}'")
     
     # Очищаем ключевые слова и служебные символы
     cleaners = [
@@ -56,27 +57,36 @@ def format_task_creation(description: str) -> str:
     description = description.strip()
     description = description.strip()
     
-    # Поиск даты в описании
-    date_keywords = {
-        'завтра': datetime.now() + timedelta(days=1),
-        'сегодня': datetime.now(),
-        'послезавтра': datetime.now() + timedelta(days=2),
-        'через день': datetime.now() + timedelta(days=1),
-        'через неделю': datetime.now() + timedelta(weeks=1),
-        'через месяц': datetime.now() + timedelta(days=30)
+    # Поиск даты и времени
+    task_date = None
+    
+    # Ищем конкретное время
+    time_match = re.search(r'в\s+(\d{1,2})(?:[:.:](\d{2}))?\s*(?:час[оа]в|час|ч)?', description)
+    if time_match:
+        hours = int(time_match.group(1))
+        minutes = int(time_match.group(2) if time_match.group(2) else 0)
+        if 0 <= hours <= 23 and 0 <= minutes <= 59:
+            logger.debug(f"Найдено время: {hours}:{minutes:02d}")
+            task_date = datetime.now().replace(hour=hours, minute=minutes)
+            if task_date < datetime.now():
+                task_date += timedelta(days=1)
+            description = re.sub(r'в\s+\d{1,2}(?:[:.:]?\d{2})?\s*(?:час[оа]в|час|ч)?\s*', '', description)
+    
+    # Ищем относительную дату
+    date_words = {
+        'завтра': timedelta(days=1),
+        'послезавтра': timedelta(days=2),
+        'через день': timedelta(days=1),
+        'через неделю': timedelta(weeks=1),
+        'через месяц': timedelta(days=30)
     }
     
-    # Поиск времени в описании
-    time_pattern = r'в (\d{1,2})(?:[:.](\d{2}))?\s*(?:часов|час|ч)?'
-    
-    task_date = None
-    task_time = None
-    
-    # Проверяем дату
-    for keyword, date in date_keywords.items():
-        if keyword in description:
-            task_date = date
-            description = description.replace(keyword, '').strip()
+    for word, delta in date_words.items():
+        if word in description:
+            base_date = datetime.now() if not task_date else task_date
+            task_date = base_date + delta
+            logger.debug(f"Найдена дата по слову '{word}': {task_date}")
+            description = description.replace(word, '').strip()
             break
     
     # Проверяем время
@@ -98,20 +108,26 @@ def format_task_creation(description: str) -> str:
     # Очищаем описание от лишних символов и пробелов
     description = re.sub(r'[.\s]+$', '', description).strip()
     
+    # Очищаем оставшиеся лишние пробелы
+    description = ' '.join(word for word in description.split() if word)
+    logger.debug(f"Финальное описание: '{description}'")
+    
     # Формируем ответ
-    response = "✅ Создаю новую задачу:\n\n"
-    response += f"📝 Описание: {description.capitalize()}\n"
+    response_parts = [
+        "✅ Создаю новую задачу:\n",
+        f"📝 Описание: {description.capitalize()}",
+    ]
     
     if task_date:
-        if task_date.hour != 0 or task_date.minute != 0:
-            response += f"📅 Дата и время: {task_date.strftime('%d.%m.%Y в %H:%M')}\n"
-        else:
-            response += f"📅 Дата: {task_date.strftime('%d.%m.%Y')}\n"
+        date_format = '%d.%m.%Y в %H:%M' if task_date.hour != 0 or task_date.minute != 0 else '%d.%m.%Y'
+        response_parts.append(f"📅 {'Дата и время' if 'в' in date_format else 'Дата'}: {task_date.strftime(date_format)}")
     
-    response += f"⚡ Приоритет: {priority.capitalize()}\n"
-    response += "\n✨ Задача успешно создана и добавлена в систему."
+    response_parts.extend([
+        f"⚡ Приоритет: {priority.capitalize()}",
+        "✨ Задача успешно создана и добавлена в систему."
+    ])
     
-    return response
+    return '\n'.join(response_parts)
 
 class CommandProcessor:
     def __init__(self):
