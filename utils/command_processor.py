@@ -77,6 +77,8 @@ def format_task_creation(description: str) -> str:
     
     # Шаг 4: Финальная очистка описания
     description = ' '.join(word for word in description.split() if word)
+    # Удаляем точку в конце, если она есть
+    description = description.rstrip('.')
     logger.info(f"Финальное описание: '{description}'")
     
     # Шаг 5: Формируем ответ
