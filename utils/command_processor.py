@@ -9,14 +9,12 @@ def format_task_creation(description: str) -> str:
     """Format task creation response with parsed details"""
     if not description:
         return "Пожалуйста, укажите описание задачи"
+
+    # Логируем исходный текст
+    logger.info(f"Исходный текст задачи: '{description}'")
     
-    # Начинаем с логирования исходного текста
-    logger.info(f"Начало обработки задачи. Исходный текст: '{description}'")
-    
-    # Шаг 1: Определяем приоритет сразу, до любой обработки текста
-    original_text = description.lower()
-    priority_words = ['срочн', 'срочная', 'срочную', 'важн', 'важная', 'важную', 'критичн']
-    priority = 'высокий' if any(word in original_text for word in priority_words) else 'обычный'
+    # Проверяем приоритет по наличию слова "срочн"
+    priority = 'высокий' if 'срочн' in description.lower() else 'обычный'
     logger.info(f"Определен приоритет: {priority}")
     
     # Шаг 2: Очищаем текст от служебных слов
