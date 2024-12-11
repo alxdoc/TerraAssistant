@@ -2,7 +2,6 @@ const CommandTypes = {
     TASK_CREATION: 'task_creation',
     DOCUMENT_ANALYSIS: 'document_analysis',
     SEARCH: 'search',
-    REPORT: 'report',
     CALENDAR: 'calendar',
     CONTACT: 'contact',
     REMINDER: 'reminder',
@@ -13,6 +12,7 @@ const CommandTypes = {
     ANALYTICS: 'analytics',
     EMPLOYEE: 'employee',
     MEETING: 'meeting',
+    GREETING: 'greeting',
     UNKNOWN: 'unknown'
 };
 
