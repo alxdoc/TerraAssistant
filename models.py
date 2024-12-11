@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from flask_sqlalchemy import SQLAlchemy
 import logging
 
@@ -11,13 +12,20 @@ def init_db(app):
         logger.info("Initializing database...")
         db.init_app(app)
         
-        # Создаем все таблицы в контексте приложения
         with app.app_context():
+            # Создаем директорию instance если её нет
+            os.makedirs('instance', exist_ok=True)
+            # Создаем все таблицы
             db.create_all()
             logger.info("Database tables created successfully")
             
     except Exception as e:
         logger.error(f"Failed to initialize database: {str(e)}", exc_info=True)
+        try:
+            if db.session:
+                db.session.rollback()
+        except:
+            pass
         raise
 
 class Command(db.Model):
