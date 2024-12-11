@@ -13,6 +13,7 @@ def format_task_creation(description: str) -> str:
         
     # Очищаем описание от лишних слов
     description = re.sub(r'^(тера|терра|terra),?\s*', '', description.lower())
+    description = re.sub(r'^(создай|создать|добавь|добавить)\s+', '', description)
     
     # Поиск даты в описании
     date_keywords = {
@@ -25,7 +26,7 @@ def format_task_creation(description: str) -> str:
     }
     
     # Поиск времени в описании
-    time_pattern = r'в (\d{1,2})(?::(\d{2}))?\s*(?:часов|час|ч)?'
+    time_pattern = r'в (\d{1,2})(?:[:.](\d{2}))?\s*(?:часов|час|ч)?'
     
     task_date = None
     task_time = None
