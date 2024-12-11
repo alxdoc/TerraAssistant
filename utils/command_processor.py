@@ -692,12 +692,7 @@ class CommandProcessor:
                              "Новые продукты: 3\n" + \
                              "Улучшение процессов: 15%\n" + \
                              "Экономия: " + self._format_currency(8000000) + " руб.\n" + \
-                             "Удовлетворенность: 92%",
-    def handle_quality(self, entities: Dict) -> str:
-        """Handle quality management commands"""
-        description = entities.get('description', '').lower()
-        if not description:
-            return "Пожалуйста, уточните операцию по управлению качеством"
+                             "Удовлетворенность: 92%"
 
         quality_actions = {
             'проверка': 'inspection',
