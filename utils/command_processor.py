@@ -167,6 +167,49 @@ def format_business_command(command_type: str, description: str) -> str:
     # Извлекаем специальные параметры из описания
     params = {}
     
+    # Поиск финансовых параметров
+    amount_match = re.search(r'(?:сумм(?:а|у|ой))?\s*[-]?\s*(\d+(?:[,.]\d{1,2})?)\s*([$€₽]|руб(?:лей|ля)?|долл(?:ар(?:ов|а)?)?|евро)?', description, re.IGNORECASE)
+    if amount_match:
+        amount = amount_match.group(1).replace(',', '.')
+        currency = amount_match.group(2) if amount_match.group(2) else 'руб'
+        currency = {
+            '$': 'USD',
+            '€': 'EUR',
+            'долл': 'USD',
+            'доллар': 'USD',
+            'доллара': 'USD',
+            'долларов': 'USD',
+            'евро': 'EUR',
+            'руб': 'RUB',
+            'рубль': 'RUB',
+            'рубля': 'RUB',
+            'рублей': 'RUB',
+            '₽': 'RUB'
+        }.get(currency.lower(), 'RUB')
+        
+        params['amount'] = float(amount)
+        params['currency'] = currency
+        description = re.sub(r'сумм(?:а|у|ой)?\s*[-]?\s*\d+(?:[,.]\d{1,2})?\s*(?:[$€₽]|руб(?:лей|ля)?|долл(?:ар(?:ов|а)?)?|евро)?\s*', '', description, flags=re.IGNORECASE)
+    
+    # Ищем тип финансовой операции
+    operation_types = {
+        'доход': 'income',
+        'поступление': 'income',
+        'приход': 'income',
+        'получение': 'income',
+        'расход': 'expense',
+        'списание': 'expense',
+        'затраты': 'expense',
+        'оплата': 'expense',
+        'перевод': 'transfer',
+        'перечисление': 'transfer'
+    }
+    for word, op_type in operation_types.items():
+        if word in description.lower():
+            params['operation_type'] = op_type
+            description = re.sub(rf'\s*{word}\s*', '', description, flags=re.IGNORECASE)
+            break
+    
     # Ищем сроки
     deadline_match = re.search(r'до\s+(\d{1,2})[.\-](\d{1,2})(?:[.\-](\d{4})|)', description)
     if deadline_match:
@@ -221,6 +264,17 @@ def format_business_command(command_type: str, description: str) -> str:
         description = re.sub(r'этап:?\s*[^,.]+[,.]?\s*', '', description, flags=re.IGNORECASE)
     
     responses = {
+        'finance': {
+            'icon': '💰',
+            'action': 'Обрабатываю финансовую операцию',
+            'category': 'Финансы',
+            'extra_info': lambda p: '\n'.join(filter(None, [
+                f"💵 Сумма: {p.get('amount', 0):,.2f} {p.get('currency', 'RUB')}" if 'amount' in p else '',
+                f"📊 Тип операции: " + {'income': 'Доход', 'expense': 'Расход', 'transfer': 'Перевод'}.get(p.get('operation_type', ''), 'Не указан') if 'operation_type' in p else '',
+                f"📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else '',
+                f"🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
+            ]))
+        },
         'marketing': {
             'icon': '📢',
             'action': 'Создаю маркетинговую задачу',
