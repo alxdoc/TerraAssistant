@@ -173,7 +173,7 @@ def format_business_command(command_type: str, description: str) -> str:
         r'на\s+(\d+(?:[,.]\d{1,2})?)\s*([$€₽]|руб(?:лей|ля|\.)?|долл(?:ар(?:ов|а|ы)?)?|евро)',
         r'в\s+размере\s+(\d+(?:[,.]\d{1,2})?)\s*([$€₽]|руб(?:лей|ля|\.)?|долл(?:ар(?:ов|а|ы)?)?|евро)',
     ]
-    
+
     for pattern in amount_patterns:
         amount_match = re.search(pattern, description, re.IGNORECASE)
         if amount_match:
@@ -195,25 +195,19 @@ def format_business_command(command_type: str, description: str) -> str:
                 'руб.': 'RUB',
                 '₽': 'RUB'
             }.get(currency.lower() if currency else 'руб', 'RUB')
-            
-            # Сохраняем найденные параметры
+
             params['amount'] = float(amount)
             params['currency'] = currency
-            
-            # Очищаем описание от найденного паттерна
             description = re.sub(pattern, '', description, flags=re.IGNORECASE)
             break
-        
-        params['amount'] = float(amount)
-        params['currency'] = currency
-        description = re.sub(r'сумм(?:а|у|ой)?\s*[-]?\s*\d+(?:[,.]\d{1,2})?\s*(?:[$€₽]|руб(?:лей|ля)?|долл(?:ар(?:ов|а)?)?|евро)?\s*', '', description, flags=re.IGNORECASE)
     
     # Улучшенное распознавание типа финансовой операции
     operation_types = {
         'income': {
             'keywords': [
                 'доход', 'поступление', 'приход', 'получение', 'заработок',
-                'выручка', 'прибыль', 'поступить', 'получить', 'заработать'
+                'выручка', 'прибыль', 'поступить', 'получить', 'заработать',
+                'зачисление', 'пополнение', 'внести', 'зачисли'
             ],
             'display': 'Доход'
         },
@@ -221,40 +215,49 @@ def format_business_command(command_type: str, description: str) -> str:
             'keywords': [
                 'расход', 'списание', 'затраты', 'оплата', 'трата',
                 'платеж', 'покупка', 'закупка', 'счет', 'потратить',
-                'заплатить', 'оплатить', 'купить'
+                'заплатить', 'оплатить', 'купить', 'затратить',
+                'потрать', 'оплати', 'плати'
             ],
             'display': 'Расход'
         },
         'transfer': {
             'keywords': [
                 'перевод', 'перечисление', 'транзакция', 'переместить',
-                'перевести', 'перечислить'
+                'перевести', 'перечислить', 'переведи', 'перечисли'
             ],
             'display': 'Перевод'
         },
         'refund': {
             'keywords': [
                 'возврат', 'компенсация', 'вернуть', 'компенсировать',
-                'возместить'
+                'возместить', 'верни', 'компенсируй', 'возмести'
             ],
             'display': 'Возврат'
         }
     }
     
-    # Поиск типа операции с учетом контекста
+    # Определяем тип операции
+    operation_found = False
     for op_type, info in operation_types.items():
         if any(keyword in description.lower() for keyword in info['keywords']):
             params['operation_type'] = op_type
             params['operation_display'] = info['display']
+            operation_found = True
             # Очищаем описание от найденных ключевых слов
             for keyword in info['keywords']:
                 description = re.sub(rf'\b{keyword}\w*\b', '', description, flags=re.IGNORECASE)
             break
     
-    # Если тип операции не найден, но есть сумма, предполагаем расход
-    if 'amount' in params and 'operation_type' not in params:
-        params['operation_type'] = 'expense'
-        params['operation_display'] = 'Расход'
+    # Если тип операции не найден явно, определяем по контексту
+    if not operation_found:
+        expense_indicators = ['на', 'за', 'оплатить', 'купить']
+        if any(indicator in description.lower() for indicator in expense_indicators):
+            params['operation_type'] = 'expense'
+            params['operation_display'] = 'Расход'
+        else:
+            # По умолчанию считаем доходом
+            params['operation_type'] = 'income'
+            params['operation_display'] = 'Доход'
     
     # Ищем сроки
     deadline_match = re.search(r'до\s+(\d{1,2})[.\-](\d{1,2})(?:[.\-](\d{4})|)', description)
@@ -317,7 +320,7 @@ def format_business_command(command_type: str, description: str) -> str:
             'extra_info': lambda p: '\n'.join(filter(None, [
                 f"💵 Сумма: {p.get('amount', 0):,.2f} {p.get('currency', 'RUB')}",
                 f"📊 Тип операции: {p.get('operation_display', 'Не указан')}",
-                f"📝 Описание: {p.get('description', 'Без описания').capitalize()}",
+                f"📝 Описание: {description.strip().capitalize() if description.strip() else 'Без описания'}",
                 f"📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else None,
                 f"🎯 Приоритет: {p.get('priority', 'Обычный').capitalize()}" if 'priority' in p else None,
                 "\n✨ Операция зарегистрирована в финансовом учете."
