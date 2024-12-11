@@ -11,8 +11,39 @@ def format_task_creation(description: str) -> str:
     if not description:
         return "Пожалуйста, укажите описание задачи"
         
+    # Сохраняем оригинальный текст для определения приоритета
+    original_text = description
+    
+    # Определяем приоритет по ключевым словам в оригинальном тексте
+    priority = 'обычный'
+    priority_keywords = {
+        'срочно': 'высокий',
+        'срочную': 'высокий',
+        'срочная': 'высокий',
+        'важно': 'высокий',
+        'важную': 'высокий',
+        'важная': 'высокий',
+        'критично': 'высокий',
+        'критичную': 'высокий',
+        'критичная': 'высокий',
+        'неважно': 'низкий',
+        'неважную': 'низкий',
+        'неважная': 'низкий',
+        'некритично': 'низкий',
+        'некритичную': 'низкий',
+        'некритичная': 'низкий'
+    }
+    
+    # Проверяем приоритет до любой обработки текста
+    for keyword, level in priority_keywords.items():
+        if keyword in original_text.lower():
+            priority = level
+            # Удаляем ключевое слово приоритета из текста
+            original_text = re.sub(f'\\b{keyword}\\b\\s*', '', original_text, flags=re.IGNORECASE).strip()
+            break
+
     # Очищаем описание от лишних слов
-    description = re.sub(r'^(тера|терра|terra),?\s*', '', description.lower())
+    description = re.sub(r'^(тера|терра|terra),?\s*', '', original_text.lower())
     description = re.sub(r'^(создай|создать|добавь|добавить)\s+', '', description)
     
     # Поиск даты в описании
@@ -53,32 +84,6 @@ def format_task_creation(description: str) -> str:
                     task_date += timedelta(days=1)
             
             description = re.sub(time_pattern, '', description).strip()
-    
-    # Определяем приоритет по ключевым словам
-    priority = 'обычный'
-    priority_keywords = {
-        'срочно': 'высокий',
-        'срочную': 'высокий',
-        'срочная': 'высокий',
-        'важно': 'высокий',
-        'важную': 'высокий',
-        'важная': 'высокий',
-        'критично': 'высокий',
-        'критичную': 'высокий',
-        'критичная': 'высокий',
-        'неважно': 'низкий',
-        'неважную': 'низкий',
-        'неважная': 'низкий',
-        'некритично': 'низкий',
-        'некритичную': 'низкий',
-        'некритичная': 'низкий'
-    }
-    
-    for keyword, level in priority_keywords.items():
-        if keyword in description.lower():
-            priority = level
-            description = re.sub(f'{keyword}\\s+', '', description, flags=re.IGNORECASE).strip()
-            break
     
     # Очищаем описание от лишних символов и пробелов
     description = re.sub(r'[.\s]+$', '', description).strip()
