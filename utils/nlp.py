@@ -14,7 +14,9 @@ class DialogContext:
             'task_creation': [
                 'создать задачу', 'новая задача', 'добавить заявку',
                 'запланировать', 'поставить задачу', 'назначить задание',
-                'добавить поручение', 'создать поручение', 'новое поручение'
+                'добавить поручение', 'создать поручение', 'новое поручение',
+                'создай задачу', 'поставь задачу', 'заведи задачу',
+                'сделай задачу', 'внеси задачу', 'добавь задачу'
             ],
             'marketing': [
                 'маркетинг', 'рекламная кампания', 'продвижение',
@@ -135,19 +137,37 @@ class DialogContext:
                 logger.info(f"Распознано приветствие: {text}")
                 return command_type, entities
             
-            # Проверяем остальные паттерны команд
-            for intent, patterns in self.command_patterns.items():
+            # Приоритетные типы команд
+            priority_types = ['task_creation', 'meeting', 'reminder']
+            
+            # Сначала проверяем приоритетные типы команд
+            for priority_type in priority_types:
+                patterns = self.command_patterns.get(priority_type, [])
                 for pattern in patterns:
                     if pattern.lower() in text:
-                        command_type = intent
+                        command_type = priority_type
                         # Извлекаем оставшуюся часть текста как описание
                         description = text.replace(pattern.lower(), '').strip()
                         if description:
                             entities['description'] = description
                         self.update_context(command_type)
-                        logger.info(f"Распознана команда типа {intent}: {text}")
+                        logger.info(f"Распознана приоритетная команда типа {priority_type}: {text}")
                         logger.debug(f"Извлечено описание: {description}")
                         return command_type, entities
+            
+            # Затем проверяем остальные типы команд
+            for intent, patterns in self.command_patterns.items():
+                if intent not in priority_types:
+                    for pattern in patterns:
+                        if pattern.lower() in text:
+                            command_type = intent
+                            description = text.replace(pattern.lower(), '').strip()
+                            if description:
+                                entities['description'] = description
+                            self.update_context(command_type)
+                            logger.info(f"Распознана команда типа {intent}: {text}")
+                            logger.debug(f"Извлечено описание: {description}")
+                            return command_type, entities
             
             # Если команда не распознана, сохраняем текст как описание
             if text:
