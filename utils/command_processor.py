@@ -175,7 +175,7 @@ def format_business_command(command_type: str, description: str) -> str:
         params['deadline'] = f"{day}.{month}.{year}"
         description = re.sub(r'до\s+\d{1,2}[.\-]\d{1,2}(?:[.\-]\d{4}|)\s*', '', description)
     
-    # Ищем приоритет
+    # Ищем приоритет и статус
     priority_words = {
         'срочно': 'высокий',
         'срочный': 'высокий',
@@ -185,10 +185,40 @@ def format_business_command(command_type: str, description: str) -> str:
         'низкий': 'низкий',
         'обычный': 'средний'
     }
+    
+    status_words = {
+        'в работе': 'in_progress',
+        'выполняется': 'in_progress',
+        'завершен': 'completed',
+        'завершён': 'completed',
+        'готов': 'completed',
+        'отложен': 'on_hold',
+        'приостановлен': 'on_hold',
+        'отменен': 'cancelled',
+        'отменён': 'cancelled'
+    }
     for word, priority in priority_words.items():
         if word in description.lower():
             params['priority'] = priority
             description = re.sub(rf'\s*{word}\s*', '', description, flags=re.IGNORECASE)
+            
+    # Ищем статус
+    for word, status in status_words.items():
+        if word in description.lower():
+            params['status'] = status
+            description = re.sub(rf'\s*{word}\s*', '', description, flags=re.IGNORECASE)
+            
+    # Ищем команду проекта
+    team_match = re.search(r'команда:?\s*([^,.]+)', description, re.IGNORECASE)
+    if team_match:
+        params['team'] = team_match.group(1).strip()
+        description = re.sub(r'команда:?\s*[^,.]+[,.]?\s*', '', description, flags=re.IGNORECASE)
+        
+    # Ищем этап проекта
+    stage_match = re.search(r'этап:?\s*([^,.]+)', description, re.IGNORECASE)
+    if stage_match:
+        params['stage'] = stage_match.group(1).strip()
+        description = re.sub(r'этап:?\s*[^,.]+[,.]?\s*', '', description, flags=re.IGNORECASE)
     
     responses = {
         'marketing': {
@@ -209,7 +239,10 @@ def format_business_command(command_type: str, description: str) -> str:
             'category': 'Управление проектами',
             'extra_info': lambda p: '\n'.join(filter(None, [
                 f"📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else '',
-                f"🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
+                f"🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else '',
+                f"📊 Статус: {p.get('status', 'новый').replace('_', ' ').capitalize()}" if 'status' in p else '',
+                f"👥 Команда: {p.get('team', 'Не назначена')}" if 'team' in p else '',
+                f"📍 Этап: {p.get('stage', 'Начальный')}" if 'stage' in p else ''
             ]))
         },
         'analytics': {
