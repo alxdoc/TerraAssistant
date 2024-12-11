@@ -70,6 +70,13 @@ class CommandProcessor:
 
     def process_command(self, command_type: str, entities: Dict) -> str:
         """Process the command based on its type"""
+        logger.debug(f"Processing command of type: {command_type} with entities: {entities}")
+        
+        # Обработка приветствия
+        if command_type == 'greeting':
+            return "Здравствуйте! Я - ваш бизнес-ассистент ТЕРРА. Чем могу помочь?"
+            
+        # Маппинг типов команд на обработчики
         handlers = {
             'innovation': self.handle_innovation,
             'marketing': self.handle_marketing,
@@ -79,12 +86,32 @@ class CommandProcessor:
             'quality': self.handle_quality,
             'risk': self.handle_risk,
             'strategy': self.handle_strategy,
-            'greeting': lambda x: "Здравствуйте! Я - ваш бизнес-ассистент ТЕРРА. Чем могу помочь?"
+            'task_creation': lambda x: "Создаю новую задачу: " + x.get('description', 'без описания'),
+            'document_analysis': lambda x: "Анализирую документ: " + x.get('description', 'не указан'),
+            'search': lambda x: "Ищу информацию по запросу: " + x.get('description', 'не указан'),
+            'calendar': lambda x: "Работаю с календарем: " + x.get('description', 'нет деталей'),
+            'contact': lambda x: "Работаю с контактами: " + x.get('description', 'нет деталей'),
+            'reminder': lambda x: "Устанавливаю напоминание: " + x.get('description', 'без описания'),
+            'finance': lambda x: "Работаю с финансами: " + x.get('description', 'нет деталей'),
+            'project': lambda x: "Работаю с проектом: " + x.get('description', 'нет деталей'),
+            'sales': lambda x: "Работаю с продажами: " + x.get('description', 'нет деталей'),
+            'inventory': lambda x: "Работаю со складом: " + x.get('description', 'нет деталей'),
+            'analytics': lambda x: "Анализирую данные: " + x.get('description', 'нет деталей'),
+            'employee': lambda x: "Работаю с данными сотрудников: " + x.get('description', 'нет деталей'),
+            'meeting': lambda x: "Работаю с встречами: " + x.get('description', 'нет деталей')
         }
         
         try:
-            handler = handlers.get(command_type, lambda x: "Извините, я не распознал команду. Пожалуйста, попробуйте переформулировать.")
-            return handler(entities)
+            # Получаем обработчик для данного типа команды
+            handler = handlers.get(command_type)
+            
+            if handler:
+                logger.info(f"Found handler for command type: {command_type}")
+                return handler(entities)
+            else:
+                logger.warning(f"Unknown command type: {command_type}")
+                return "Извините, я не распознал команду. Пожалуйста, попробуйте переформулировать."
+                
         except Exception as e:
             logger.error(f"Error processing command: {str(e)}", exc_info=True)
             return "Произошла ошибка при обработке команды. Пожалуйста, попробуйте еще раз."
