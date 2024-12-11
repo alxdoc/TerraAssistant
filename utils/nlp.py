@@ -12,11 +12,12 @@ class DialogContext:
         self.last_command_type: Optional[str] = None
         self.command_patterns = {
             'task_creation': [
-                'создать задачу', 'новая задача', 'добавить заявку',
-                'запланировать', 'поставить задачу', 'назначить задание',
-                'добавить поручение', 'создать поручение', 'новое поручение',
-                'создай задачу', 'поставь задачу', 'заведи задачу',
-                'сделай задачу', 'внеси задачу', 'добавь задачу'
+                'создать задачу', 'создай задачу', 'новая задача',
+                'добавить задачу', 'добавь задачу', 'поставить задачу',
+                'поставь задачу', 'назначить задание', 'создать поручение',
+                'срочную задачу', 'важную задачу', 'критичную задачу',
+                'задачу создать', 'задачу добавить', 'новое поручение',
+                'заведи задачу', 'сделай задачу', 'внеси задачу'
             ],
             'marketing': [
                 'маркетинг', 'рекламная кампания', 'продвижение',
@@ -140,16 +141,18 @@ class DialogContext:
             # Проверяем на создание задачи первым делом
             task_patterns = self.command_patterns.get('task_creation', [])
             for pattern in task_patterns:
-                if pattern.lower() in text:
-                    command_type = 'task_creation'
-                    # Извлекаем оставшуюся часть текста как описание
-                    description = text.replace(pattern.lower(), '').strip()
-                    if description:
-                        entities['description'] = description
-                    self.update_context(command_type)
-                    logger.info(f"Распознана команда создания задачи: {text}")
-                    logger.debug(f"Извлечено описание: {description}")
-                    return command_type, entities
+                if pattern.lower() in text.lower():
+                    # Проверяем, что это действительно команда создания задачи
+                    if any(create_word in text.lower() for create_word in ['создай', 'создать', 'добавь', 'добавить']):
+                        command_type = 'task_creation'
+                        # Извлекаем оставшуюся часть текста как описание
+                        description = text.replace(pattern.lower(), '').strip()
+                        if description:
+                            entities['description'] = description
+                        self.update_context(command_type)
+                        logger.info(f"Распознана команда создания задачи: {text}")
+                        logger.debug(f"Извлечено описание: {description}")
+                        return command_type, entities
             
             # Проверяем остальные приоритетные типы команд
             priority_types = ['meeting', 'reminder']
