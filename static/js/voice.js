@@ -363,10 +363,17 @@ class VoiceAssistant {
         if (!text) {
             console.log('Empty text received');
             this.updateStatus('Пустой текст', 'error');
+            this.displayResult({
+                command_type: 'error',
+                result: 'Пожалуйста, произнесите команду'
+            });
             return;
         }
         
         try {
+            this.updateStatus('Обработка команды...', 'processing');
+            console.log('Sending request to server with text:', text);
+            
             const response = await fetch('/process_command', {
                 method: 'POST',
                 headers: {
@@ -375,23 +382,33 @@ class VoiceAssistant {
                 body: JSON.stringify({ text: text })
             });
             
+            console.log('Server response status:', response.status);
+            
             if (!response.ok) {
-                throw new Error(`Ошибка сервера: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Server error response:', errorText);
+                throw new Error(`Ошибка сервера ${response.status}: ${errorText}`);
             }
             
             const result = await response.json();
-            console.log('Server response:', result);
+            console.log('Server response data:', result);
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
             
             this.displayResult(result);
-            this.updateStatus('Готов к работе', 'ready');
+            this.updateStatus('Команда обработана', 'success');
+            setTimeout(() => this.updateStatus('Готов к работе', 'ready'), 2000);
             
         } catch (error) {
             console.error('Error processing voice input:', error);
-            this.updateStatus('Ошибка обработки команды: ' + error.message, 'error');
+            const errorMessage = error.message || 'Неизвестная ошибка';
+            this.updateStatus('Ошибка: ' + errorMessage, 'error');
             
             this.displayResult({
                 command_type: 'error',
-                result: `Ошибка: ${error.message}`
+                result: `Не удалось обработать команду: ${errorMessage}`
             });
         }
     }
