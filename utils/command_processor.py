@@ -89,21 +89,20 @@ def format_task_creation(description: str) -> str:
             description = description.replace(word, '').strip()
             break
     
-    # Проверяем время
-    time_match = re.search(time_pattern, description)
-    if time_match:
-        hours = int(time_match.group(1))
-        minutes = int(time_match.group(2)) if time_match.group(2) else 0
-        
-        if 0 <= hours <= 23 and 0 <= minutes <= 59:
-            if task_date:
-                task_date = task_date.replace(hour=hours, minute=minutes)
-            else:
+    # Проверяем время (если оно еще не установлено)
+    if not task_date:
+        time_pattern = r'в\s+(\d{1,2})(?:[:.:](\d{2}))?\s*(?:час[оа]в|час|ч)?'
+        time_match = re.search(time_pattern, description)
+        if time_match:
+            hours = int(time_match.group(1))
+            minutes = int(time_match.group(2) if time_match.group(2) else 0)
+            
+            if 0 <= hours <= 23 and 0 <= minutes <= 59:
                 task_date = datetime.now().replace(hour=hours, minute=minutes)
                 if task_date < datetime.now():
                     task_date += timedelta(days=1)
-            
-            description = re.sub(time_pattern, '', description).strip()
+                description = re.sub(time_pattern, '', description).strip()
+                logger.debug(f"Установлено время: {hours}:{minutes:02d}")
     
     # Очищаем описание от лишних символов и пробелов
     description = re.sub(r'[.\s]+$', '', description).strip()
