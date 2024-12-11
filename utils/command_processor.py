@@ -131,7 +131,7 @@ class CommandProcessor:
 command_processor = CommandProcessor()
 
 def format_business_command(command_type: str, description: str) -> str:
-    """Format business command response"""
+    """Format business command response with extended functionality"""
     logger.info(f"Форматирование бизнес-команды типа: {command_type}")
     logger.debug(f"Исходное описание: '{description}'")
     
@@ -147,6 +147,12 @@ def format_business_command(command_type: str, description: str) -> str:
         r'нов(?:ый|ую|ое)\s+',
         r'показать\s+',
         r'покажи\s+',
+        r'подготовить\s+',
+        r'запусти(?:ть)?\s+',
+        r'начать\s+',
+        r'установить\s+',
+        r'назначить\s+',
+        r'добавить\s+',
         r'^[\s,\-–]+',
         r'[\s,\-–]+$'
     ]
@@ -158,26 +164,59 @@ def format_business_command(command_type: str, description: str) -> str:
             logger.debug(f"Применен паттерн '{pattern}': '{old_desc}' -> '{description}'")
     
     # Форматируем ответ в зависимости от типа команды
+    # Извлекаем специальные параметры из описания
+    params = {}
+    
+    # Ищем сроки
+    deadline_match = re.search(r'до\s+(\d{1,2})[.\-](\d{1,2})(?:[.\-](\d{4})|)', description)
+    if deadline_match:
+        day, month = deadline_match.group(1), deadline_match.group(2)
+        year = deadline_match.group(3) if deadline_match.group(3) else str(datetime.now().year)
+        params['deadline'] = f"{day}.{month}.{year}"
+        description = re.sub(r'до\s+\d{1,2}[.\-]\d{1,2}(?:[.\-]\d{4}|)\s*', '', description)
+    
+    # Ищем приоритет
+    priority_words = {
+        'срочно': 'высокий',
+        'срочный': 'высокий',
+        'важно': 'высокий',
+        'критично': 'критический',
+        'критический': 'критический',
+        'низкий': 'низкий',
+        'обычный': 'средний'
+    }
+    for word, priority in priority_words.items():
+        if word in description.lower():
+            params['priority'] = priority
+            description = re.sub(rf'\s*{word}\s*', '', description, flags=re.IGNORECASE)
+    
     responses = {
         'marketing': {
             'icon': '📢',
             'action': 'Создаю маркетинговую задачу',
-            'category': 'Маркетинг'
+            'category': 'Маркетинг',
+            'extra_info': lambda p: f"\n🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
         },
         'employee': {
             'icon': '👤',
             'action': 'Обрабатываю запрос по персоналу',
-            'category': 'Управление персоналом'
+            'category': 'Управление персоналом',
+            'extra_info': lambda p: f"\n📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else ''
         },
         'project': {
             'icon': '📊',
             'action': 'Работаю с проектом',
-            'category': 'Управление проектами'
+            'category': 'Управление проектами',
+            'extra_info': lambda p: '\n'.join(filter(None, [
+                f"📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else '',
+                f"🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
+            ]))
         },
         'analytics': {
             'icon': '📈',
             'action': 'Формирую аналитический отчет',
-            'category': 'Бизнес-аналитика'
+            'category': 'Бизнес-аналитика',
+            'extra_info': lambda p: f"\n⚡ Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
         },
         'client': {
             'icon': '👥',
@@ -220,9 +259,16 @@ def format_business_command(command_type: str, description: str) -> str:
     response_parts = [
         f"{response_info['icon']} {response_info['action']}:",
         f"\n📝 Описание: {description.capitalize()}",
-        f"\n📁 Категория: {response_info['category']}",
-        f"\n✨ Запись успешно создана и добавлена в систему."
+        f"\n📁 Категория: {response_info['category']}"
     ]
+    
+    # Добавляем дополнительную информацию, если она есть
+    if 'extra_info' in response_info:
+        extra = response_info['extra_info'](params)
+        if extra:
+            response_parts.append(extra)
+    
+    response_parts.append("\n✨ Запись успешно создана и добавлена в систему.")
     
     return ''.join(response_parts)
 
