@@ -54,49 +54,49 @@ class DialogContext:
         if command_type != 'greeting':
             self.current_topic = command_type
 
-def analyze_text(text: str, dialog_context: DialogContext) -> Tuple[str, Dict]:
-    """Анализирует текст и возвращает намерение и сущности"""
-    try:
-        logger.debug(f"Анализ текста: {text}")
-        text = text.lower().strip()
-        
-        # Определяем тип команды и сущности
-        command_type = 'unknown'
-        entities = {}
-        
-        # Очищаем текст от ключевого слова "терра"
-        text = text.replace('терра', '').replace('terra', '').strip()
-        
-        # Проверяем на приветствие
-        greetings = ['привет', 'здравствуй', 'добрый', 'хай', 'hello']
-        if any(text.startswith(greeting) for greeting in greetings):
-            command_type = 'greeting'
-            entities['greeting'] = True
-            dialog_context.update_context(command_type)
-            logger.info(f"Распознано приветствие: {text}")
+def analyze_text(self, text: str) -> Tuple[str, Dict]:
+        """Анализирует текст и возвращает намерение и сущности"""
+        try:
+            logger.debug(f"Анализ текста: {text}")
+            text = text.lower().strip()
+            
+            # Определяем тип команды и сущности
+            command_type = 'unknown'
+            entities = {}
+            
+            # Очищаем текст от ключевого слова "терра"
+            text = text.replace('терра', '').replace('terra', '').strip()
+            
+            # Проверяем на приветствие
+            greetings = ['привет', 'здравствуй', 'добрый', 'хай', 'hello']
+            if any(text.startswith(greeting) for greeting in greetings):
+                command_type = 'greeting'
+                entities['greeting'] = True
+                self.update_context(command_type)
+                logger.info(f"Распознано приветствие: {text}")
+                return command_type, entities
+            
+            # Проверяем остальные паттерны команд
+            for intent, patterns in self.command_patterns.items():
+                for pattern in patterns:
+                    if pattern in text:
+                        command_type = intent
+                        # Извлекаем оставшуюся часть текста как описание
+                        description = text.replace(pattern, '').strip()
+                        if description:
+                            entities['description'] = description
+                        self.update_context(command_type)
+                        logger.info(f"Распознана команда типа {intent}: {text}")
+                        logger.debug(f"Извлечено описание: {description}")
+                        return command_type, entities
+            
+            # Если команда не распознана, сохраняем текст как описание
+            if text:
+                entities['description'] = text
+                logger.warning(f"Команда не распознана, сохранён текст: {text}")
+            
             return command_type, entities
-        
-        # Проверяем остальные паттерны команд
-        for intent, patterns in dialog_context.command_patterns.items():
-            for pattern in patterns:
-                if pattern in text:
-                    command_type = intent
-                    # Извлекаем оставшуюся часть текста как описание
-                    description = text.replace(pattern, '').strip()
-                    if description:
-                        entities['description'] = description
-                    dialog_context.update_context(command_type)
-                    logger.info(f"Распознана команда типа {intent}: {text}")
-                    logger.debug(f"Извлечено описание: {description}")
-                    return command_type, entities
-        
-        # Если команда не распознана, сохраняем текст как описание
-        if text:
-            entities['description'] = text
-            logger.warning(f"Команда не распознана, сохранён текст: {text}")
-        
-        return command_type, entities
-        
-    except Exception as e:
-        logger.error(f"Ошибка при анализе текста: {str(e)}", exc_info=True)
-        return 'unknown', {'error': str(e)}
+            
+        except Exception as e:
+            logger.error(f"Ошибка при анализе текста: {str(e)}", exc_info=True)
+            return 'unknown', {'error': str(e)}

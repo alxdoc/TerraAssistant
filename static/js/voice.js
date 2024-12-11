@@ -7,39 +7,7 @@ class VoiceAssistant {
         this.mediaRecorder = null;
         this.audioChunks = [];
         
-        try {
-            // Проверяем поддержку MediaRecorder API
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                console.error('MediaRecorder API не поддерживается');
-                throw new Error('MediaRecorder API не поддерживается в этом браузере');
-            }
-            
-            console.log('MediaRecorder API поддерживается, инициализация...');
-            
-            this.initialize();
-            
-        } catch (error) {
-            console.error('Constructor error:', error);
-            this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
-            this.disableButtons();
-        }
-    }
-            
-            // Логируем конфигурацию
-            console.log('Recognition configured with params:', {
-                lang: this.recognition.lang,
-                continuous: this.recognition.continuous,
-                interimResults: this.recognition.interimResults,
-                maxAlternatives: this.recognition.maxAlternatives
-            });
-            
-            this.setupRecognition();
-            
-        } catch (error) {
-            console.error('Constructor error:', error);
-            this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
-            this.disableButtons();
-        }
+        this.initialize();
     }
 
     async initialize() {
@@ -82,13 +50,11 @@ class VoiceAssistant {
                 }
             });
             
-            // Проверяем состояние треков
-            const audioTracks = stream.getAudioTracks();
-            if (audioTracks.length === 0) {
+            if (stream.getAudioTracks().length === 0) {
                 throw new Error('Не удалось получить аудио трек');
             }
             
-            // Останавливаем треки после проверки
+            // Останавливаем тестовый стрим
             stream.getTracks().forEach(track => {
                 track.stop();
                 console.log('Track stopped:', track.kind);
@@ -120,7 +86,13 @@ class VoiceAssistant {
                 }
             });
             
-            this.mediaRecorder = new MediaRecorder(stream);
+            // Проверяем поддерживаемые MIME типы
+            const mimeType = this.getSupportedMimeType();
+            console.log('Using MIME type:', mimeType);
+            
+            this.mediaRecorder = new MediaRecorder(stream, {
+                mimeType: mimeType
+            });
             
             this.mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
@@ -129,7 +101,7 @@ class VoiceAssistant {
             };
             
             this.mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                const audioBlob = new Blob(this.audioChunks, { type: mimeType });
                 this.audioChunks = [];
                 
                 this.updateStatus('Обработка аудио...', 'processing');
@@ -145,6 +117,24 @@ class VoiceAssistant {
             this.updateStatus('Ошибка доступа к микрофону: ' + error.message, 'error');
             throw error;
         }
+    }
+
+    getSupportedMimeType() {
+        const types = [
+            'audio/webm',
+            'audio/webm;codecs=opus',
+            'audio/ogg;codecs=opus',
+            'audio/wav',
+            'audio/mp4'
+        ];
+        
+        for (const type of types) {
+            if (MediaRecorder.isTypeSupported(type)) {
+                return type;
+            }
+        }
+        
+        throw new Error('Не найден поддерживаемый формат аудио');
     }
 
     async sendAudioToServer(audioBlob) {
@@ -306,61 +296,6 @@ class VoiceAssistant {
             resultContainer.removeChild(resultContainer.lastChild);
         }
     }
-
-    async processVoiceInput(text) {
-        console.log('Processing voice input:', text);
-        if (!text) {
-            console.log('Empty text received');
-            this.updateStatus('Пустой текст', 'error');
-            this.displayResult({
-                command_type: 'error',
-                result: 'Пожалуйста, произнесите команду'
-            });
-            return;
-        }
-        
-        try {
-            this.updateStatus('Обработка команды...', 'processing');
-            console.log('Sending request to server with text:', text);
-            
-            const response = await fetch('/process_command', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text: text })
-            });
-            
-            console.log('Server response status:', response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server error response:', errorText);
-                throw new Error(`Ошибка сервера ${response.status}: ${errorText}`);
-            }
-            
-            const result = await response.json();
-            console.log('Server response data:', result);
-            
-            if (result.error) {
-                throw new Error(result.error);
-            }
-            
-            this.displayResult(result);
-            this.updateStatus('Команда обработана', 'success');
-            setTimeout(() => this.updateStatus('Готов к работе', 'ready'), 2000);
-            
-        } catch (error) {
-            console.error('Error processing voice input:', error);
-            const errorMessage = error.message || 'Неизвестная ошибка';
-            this.updateStatus('Ошибка: ' + errorMessage, 'error');
-            
-            this.displayResult({
-                command_type: 'error',
-                result: `Не удалось обработать команду: ${errorMessage}`
-            });
-        }
-    }
 }
 
 // Инициализация после загрузки страницы
@@ -376,13 +311,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    // Добавляем обработчики событий для кнопок
     startBtn.addEventListener('click', async () => {
         console.log('Start button clicked');
         try {
             await assistant.start();
         } catch (error) {
-            console.error('Error starting recognition:', error);
+            console.error('Error starting recording:', error);
             assistant.updateStatus('Ошибка запуска: ' + error.message, 'error');
         }
     });
@@ -392,9 +326,5 @@ document.addEventListener('DOMContentLoaded', () => {
         assistant.stop();
     });
     
-    // Изначально деактивируем кнопку остановки
     stopBtn.disabled = true;
-    
-    // Инициализируем ассистента
-    assistant.initialize();
 });
