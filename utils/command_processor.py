@@ -13,21 +13,27 @@ def format_task_creation(description: str) -> str:
         
     # Определяем приоритет по ключевым словам в исходном тексте
     priority = 'обычный'
-    priority_patterns = [
-        (r'\b(сроч|важн|критич)\w*\b', 'высокий'),
-        (r'\b(неважн|некритич)\w*\b', 'низкий')
-    ]
-    
+    priority_words = {
+        'высокий': ['срочн', 'срочная', 'срочную', 'срочное', 'важн', 'важная', 'важную', 'важное', 'критичн'],
+        'низкий': ['неважн', 'некритичн']
+    }
+
     # Проверяем приоритет до любой обработки текста
-    description_lower = description.lower()
-    logger.debug(f"Проверка приоритета для текста: {description_lower}")
-    
-    for pattern, level in priority_patterns:
-        if re.search(pattern, description_lower):
-            priority = level
-            logger.debug(f"Найден приоритет {level} по шаблону {pattern}")
-            # Удаляем слова о приоритете и слово "задача" после них
-            description = re.sub(pattern + r'\s*(задач[ауи]?)?\s*', '', description, flags=re.IGNORECASE)
+    text_for_priority = description.lower()
+    logger.debug(f"Анализ приоритета. Исходный текст: '{text_for_priority}'")
+
+    # Проверяем каждое слово текста на совпадение с ключевыми словами приоритета
+    words = text_for_priority.split()
+    for word in words:
+        logger.debug(f"Проверка слова: '{word}'")
+        for level, patterns in priority_words.items():
+            if any(word.startswith(pattern) for pattern in patterns):
+                priority = level
+                logger.debug(f"Найден приоритет '{level}' в слове '{word}'")
+                # Удаляем найденное слово и возможное слово "задача" после него
+                description = re.sub(rf'\b{word}\b\s*(задач[ауи]?)?\s*', '', description, flags=re.IGNORECASE)
+                break
+        if priority != 'обычный':
             break
     
     # Затем очищаем описание от лишних слов и символов
