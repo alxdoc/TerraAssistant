@@ -138,10 +138,10 @@ class DialogContext:
             # Проверяем остальные паттерны команд
             for intent, patterns in self.command_patterns.items():
                 for pattern in patterns:
-                    if pattern in text:
+                    if pattern.lower() in text:
                         command_type = intent
                         # Извлекаем оставшуюся часть текста как описание
-                        description = text.replace(pattern, '').strip()
+                        description = text.replace(pattern.lower(), '').strip()
                         if description:
                             entities['description'] = description
                         self.update_context(command_type)

@@ -105,12 +105,15 @@ def create_app():
                 logger.info(f"Whisper API response: {text}")
                 
                 # Анализируем текст и получаем тип команды
+                logger.debug(f"Анализируем текст после распознавания: '{text}'")
                 command_type, entities = app.dialog_context.analyze_text(text)
                 logger.info(f"Распознан тип команды: {command_type}, сущности: {entities}")
                 
                 # Обрабатываем команду через процессор команд
                 result = process_command(command_type, entities)
                 logger.info(f"Результат обработки команды: {result}")
+                
+                logger.debug(f"Отправляем ответ клиенту: {result}")
                 
                 return jsonify({
                     'status': 'success',
