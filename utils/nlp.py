@@ -139,20 +139,15 @@ class DialogContext:
                 return command_type, entities
             
             # Проверяем на создание задачи первым делом
-            task_patterns = self.command_patterns.get('task_creation', [])
-            for pattern in task_patterns:
-                if pattern.lower() in text.lower():
-                    # Проверяем, что это действительно команда создания задачи
-                    if any(create_word in text.lower() for create_word in ['создай', 'создать', 'добавь', 'добавить']):
-                        command_type = 'task_creation'
-                        # Извлекаем оставшуюся часть текста как описание
-                        description = text.replace(pattern.lower(), '').strip()
-                        if description:
-                            entities['description'] = description
-                        self.update_context(command_type)
-                        logger.info(f"Распознана команда создания задачи: {text}")
-                        logger.debug(f"Извлечено описание: {description}")
-                        return command_type, entities
+            if any(word in text.lower() for word in ['задач', 'задача', 'поручени']):
+                # Если есть слово задача/поручение и глагол создания
+                if any(create_word in text.lower() for create_word in ['создай', 'создать', 'добавь', 'добавить', 'постав']):
+                    command_type = 'task_creation'
+                    entities['description'] = text
+                    self.update_context(command_type)
+                    logger.info(f"Распознана команда создания задачи: {text}")
+                    logger.debug(f"Полный текст задачи: {text}")
+                    return command_type, entities
             
             # Проверяем остальные приоритетные типы команд
             priority_types = ['meeting', 'reminder']
