@@ -118,7 +118,8 @@ class CommandProcessor:
         business_commands = [
             'marketing', 'client', 'supplier', 'contract',
             'quality', 'risk', 'strategy', 'compliance',
-            'innovation', 'document', 'search', 'contact'
+            'innovation', 'document', 'search', 'contact',
+            'project', 'analytics', 'employee'  # Добавляем новые типы команд
         ]
         
         if command_type in business_commands:
@@ -131,18 +132,30 @@ command_processor = CommandProcessor()
 
 def format_business_command(command_type: str, description: str) -> str:
     """Format business command response"""
+    logger.info(f"Форматирование бизнес-команды типа: {command_type}")
+    logger.debug(f"Исходное описание: '{description}'")
+    
     if not description:
+        logger.warning("Пустое описание команды")
         return f"Пожалуйста, укажите описание для команды типа {command_type}"
     
     # Очищаем описание от служебных слов
     cleaners = [
         r't?[еэ]рр?а?[,]?\s*',
+        r'создай(?:те)?\s+',
+        r'создать\s+',
+        r'нов(?:ый|ую|ое)\s+',
+        r'показать\s+',
+        r'покажи\s+',
         r'^[\s,\-–]+',
         r'[\s,\-–]+$'
     ]
     
     for pattern in cleaners:
+        old_desc = description
         description = re.sub(pattern, '', description, flags=re.IGNORECASE)
+        if old_desc != description:
+            logger.debug(f"Применен паттерн '{pattern}': '{old_desc}' -> '{description}'")
     
     # Форматируем ответ в зависимости от типа команды
     responses = {
