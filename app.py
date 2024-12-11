@@ -1,10 +1,12 @@
 from flask import Flask, render_template, jsonify, request
 import logging
 import os
-from openai import OpenAI
 import tempfile
+from openai import OpenAI
 from utils.nlp import DialogContext
 from utils.command_processor import process_command
+from flask_cors import CORS
+from models import init_db
 
 # Настройка логирования
 logging.basicConfig(
@@ -19,16 +21,28 @@ client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
 def create_app():
     """Create and configure the Flask application"""
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'dev-key-1234'
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Ограничение размера файла: 16MB
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/terra.db'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Инициализация базы данных и контекста диалога
-    from models import init_db
-    init_db(app)
-    dialog_context = DialogContext()
-    
+    try:
+        # Конфигурация приложения
+        app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-1234')
+        app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Ограничение размера файла: 16MB
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/terra.db'
+        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        
+        # Инициализация CORS
+        CORS(app)
+        
+        # Инициализация базы данных
+        init_db(app)
+        
+        # Создаем глобальный объект для хранения контекста диалога
+        app.dialog_context = DialogContext()
+        
+        logger.info("Application initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing application: {str(e)}")
+        raise
+
     @app.route('/')
     def index():
         """Render the main page"""
@@ -87,7 +101,7 @@ def create_app():
                 logger.info(f"Whisper API response: {text}")
                 
                 # Анализируем текст и получаем тип команды
-                command_type, entities = dialog_context.analyze_text(text)
+                command_type, entities = app.dialog_context.analyze_text(text)
                 logger.info(f"Распознан тип команды: {command_type}, сущности: {entities}")
                 
                 # Обрабатываем команду через процессор команд
