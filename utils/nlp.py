@@ -1,222 +1,131 @@
 import logging
 import re
-from typing import Dict, Tuple, Optional
+from datetime import datetime
+from typing import List, Dict, Tuple, Optional, Any
+from collections import defaultdict
 
-# Настройка логирования
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 class DialogContext:
     def __init__(self):
         self.current_topic: Optional[str] = None
-        self.last_command_type: Optional[str] = None
+        self.context_history: List[Dict] = []
+        self.confidence_threshold = 0.7
         self.command_patterns = {
             'task_creation': [
                 'создать задачу', 'создай задачу', 'новая задача',
-                'добавить задачу', 'добавь задачу', 'поставить задачу',
-                'поставь задачу', 'назначить задание', 'создать поручение',
-                'срочную задачу', 'важную задачу', 'критичную задачу',
-                'задачу создать', 'задачу добавить', 'новое поручение',
-                'заведи задачу', 'сделай задачу', 'внеси задачу',
-                'запланировать', 'назначить', 'добавить заявку',
-                'создай поручение', 'новое задание'
+                'добавить задачу', 'поставить задачу', 'назначить задачу'
             ],
-            'employee': [
-                'сотрудник', 'персонал', 'штат', 'отпуск',
-                'график работы', 'зарплата', 'оценка работы',
-                'повышение', 'обучение', 'компетенции',
-                'добавить сотрудника', 'новый работник',
-                'карточка сотрудника', 'кадровые данные',
-                'hr', 'кадры', 'персонал', 'вакансия',
-                'собеседование', 'рекрутинг', 'найм',
-                'увольнение', 'больничный', 'отгул',
-                'командировка', 'стажировка', 'аттестация',
-                'мотивация', 'тренинг', 'развитие персонала',
-                'кадровый учет', 'штатное расписание'
+            'finance': [
+                'финансы', 'доход', 'расход', 'баланс', 'бюджет',
+                'платеж', 'счет', 'оплата', 'транзакция'
             ],
             'project': [
                 'проект', 'создать проект', 'статус проекта',
-                'обновить проект', 'завершить проект', 'команда проекта',
-                'план проекта', 'этапы проекта', 'задачи проекта',
-                'бюджет проекта', 'сроки проекта', 'ресурсы проекта'
-            ],
-            'analytics': [
-                'аналитика', 'анализ данных', 'тренды', 'прогноз',
-                'показатели', 'метрики', 'эффективность', 'отчет по продажам',
-                'статистика', 'динамика продаж', 'анализ эффективности',
-                'бизнес-показатели', 'ключевые метрики', 'dashboard'
+                'обновить проект', 'завершить проект'
             ],
             'marketing': [
-                'маркетинг', 'рекламная кампания', 'продвижение',
-                'анализ рынка', 'целевая аудитория', 'бренд',
-                'социальные сети', 'маркетинговый план'
+                'маркетинг', 'реклама', 'продвижение', 'анализ рынка',
+                'целевая аудитория', 'маркетинговый план'
             ],
             'client': [
-                'клиентская база', 'клиенты', 'работа с клиентами',
-                'обслуживание клиентов', 'лояльность клиентов',
-                'обратная связь', 'клиентский опыт'
-            ],
-            'supplier': [
-                'поставщики', 'управление поставками', 'закупки',
-                'оценка поставщиков', 'договор поставки', 'логистика',
-                'цепочка поставок'
-            ],
-            'contract': [
-                'договор', 'контракт', 'соглашение', 'условия договора',
-                'подписание договора', 'расторжение договора',
-                'дополнительное соглашение'
-            ],
-            'quality': [
-                'качество', 'контроль качества', 'управление качеством',
-                'стандарты качества', 'улучшение качества', 'оценка качества',
-                'система качества'
-            ],
-            'document_analysis': [
-                'проверить документ', 'анализ документа', 'проверка договора',
-                'изучить документ', 'просмотреть контракт', 'проанализировать соглашение'
-            ],
-            'search': [
-                'найти', 'поиск', 'искать', 'где находится',
-                'покажи информацию', 'найди данные', 'поищи'
-            ],
-            'calendar': [
-                'календарь', 'расписание', 'встреча',
-                'запланировать встречу', 'добавить в календарь'
-            ],
-            'contact': [
-                'контакт', 'добавить контакт', 'найти контакт',
-                'информация о человеке', 'данные сотрудника', 'телефон'
-            ],
-            'reminder': [
-                'напомнить', 'установить напоминание',
-                'поставить будильник', 'не забыть', 'запомнить'
-            ],
-            'finance': [
-                'финансы', 'баланс', 'бюджет', 'расходы', 'доходы',
-                'платеж', 'счет', 'транзакция', 'оплата', 'выставить счет',
-                'финансовый отчет', 'прибыль', 'убытки', 'задолженность',
-                'дебиторка', 'кредиторка', 'движение средств', 'бухгалтерия',
-                'налоги', 'зарплатный проект', 'инвестиции', 'активы',
-                'пассивы', 'баланс', 'отчетность', 'платежка'
-            ],
-            'project': [
-                'проект', 'создать проект', 'статус проекта', 'обновить проект',
-                'завершить проект', 'команда проекта', 'план проекта'
-            ],
-            'sales': [
-                'продажи', 'новая сделка', 'клиент', 'заказ', 
-                'оформить продажу', 'воронка продаж', 'выставить счет',
-                'статус сделки', 'потенциальный клиент'
-            ],
-            'inventory': [
-                'склад', 'товары', 'остатки', 'проверить наличие',
-                'заказать товар', 'инвентаризация', 'поставка',
-                'приход товара', 'отгрузка'
-            ],
-            'analytics': [
-                'аналитика', 'анализ данных', 'тренды', 'прогноз',
-                'показатели', 'метрики', 'эффективность', 'отчет по продажам',
-                'статистика', 'динамика продаж'
-            ],
-            'employee': [
-                'сотрудник', 'персонал', 'штат', 'отпуск',
-                'график работы', 'зарплата', 'оценка работы',
-                'повышение', 'обучение', 'компетенции'
-            ],
-            'meeting': [
-                'совещание', 'организовать встречу', 'запланировать звонок',
-                'конференция', 'презентация', 'брифинг', 'переговоры'
+                'клиент', 'клиентская база', 'работа с клиентами',
+                'обслуживание клиентов', 'лояльность клиентов'
             ],
             'greeting': [
                 'привет', 'здравствуй', 'добрый день', 'доброе утро',
                 'добрый вечер', 'приветствую'
             ]
         }
-
-    def get_context(self) -> Dict:
-        """Возвращает текущий контекст диалога"""
-        return {
-            'topic': self.current_topic,
-            'entities': {},
-            'last_command_type': self.last_command_type
+        self.entity_extractors = {  # Add entity extractors for more robust entity recognition.
+            'task_creation': self._extract_task_details,
+            'project': self._extract_project_details,
+            # Add more entity extractors as needed...
         }
 
-    def update_context(self, command_type: str) -> None:
-        """Обновляет контекст диалога"""
-        self.last_command_type = command_type
-        if command_type != 'greeting':
-            self.current_topic = command_type
+
+    def _clean_text(self, text: str) -> str:
+        """Cleans text from unnecessary symbols and normalizes it."""
+        text = re.sub(r't?[еэ]рр?а?[,]?\s*', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'\s+', ' ', text)
+        text = text.strip('.,!?;:')
+        return text.strip()
+
+    def _calculate_command_confidence(self, text: str, patterns: List[str]) -> float:
+        """Calculates the confidence in command recognition."""
+        max_confidence = 0.0
+        text = text.lower()
+        for pattern in patterns:
+            if pattern.lower() in text:
+                max_confidence = 1.0
+                break  # Exact match, no need to check further
+            pattern_words = set(pattern.lower().split())
+            text_words = set(text.split())
+            common_words = pattern_words.intersection(text_words)
+            if common_words:
+                confidence = len(common_words) / max(len(pattern_words), len(text_words))
+                max_confidence = max(max_confidence, confidence)
+        return max_confidence
+
+    def _update_context_history(self, context: Dict[str, Any]) -> None:
+        """Updates the context history."""
+        self.context_history.append(context)
+        if len(self.context_history) > 10:
+            self.context_history.pop(0)
+
+    def update_context(self, command_type: str, entities: Dict) -> None:
+        """Updates the current dialog context."""
+        logger.debug(f"Updating context: {command_type}, Entities: {entities}")
+        context = {
+            'timestamp': datetime.now().isoformat(),
+            'command_type': command_type,
+            'entities': entities,
+        }
+        self._update_context_history(context)
+
 
     def analyze_text(self, text: str) -> Tuple[str, Dict]:
-        """Анализирует текст и возвращает намерение и сущности"""
+        """Analyzes text and returns intent and entities, considering context."""
         try:
-            logger.debug(f"Анализ текста: {text}")
-            text = text.lower().strip()
-            
-            # Определяем тип команды и сущности
+            logger.debug(f"Analyzing text: {text}")
+            cleaned_text = self._clean_text(text.lower().strip())
             command_type = 'unknown'
             entities: Dict = {}
-            
-            # Очищаем текст от ключевого слова "терра"
-            text = text.replace('терра', '').replace('terra', '').strip()
-            
-            # Проверяем на приветствие
-            greetings = ['привет', 'здравствуй', 'добрый', 'хай', 'hello']
-            if any(text.startswith(greeting) for greeting in greetings):
-                command_type = 'greeting'
-                entities['greeting'] = True
-                self.update_context(command_type)
-                logger.info(f"Распознано приветствие: {text}")
-                return command_type, entities
-            
-            # Проверяем на создание задачи первым делом
-            if any(word in text.lower() for word in ['задач', 'задача', 'поручени']):
-                # Если есть слово задача/поручение и глагол создания
-                if any(create_word in text.lower() for create_word in ['создай', 'создать', 'добавь', 'добавить', 'постав']):
-                    command_type = 'task_creation'
-                    entities['description'] = text
-                    self.update_context(command_type)
-                    logger.info(f"Распознана команда создания задачи: {text}")
-                    logger.debug(f"Полный текст задачи: {text}")
-                    return command_type, entities
-            
-            # Проверяем остальные приоритетные типы команд
-            priority_types = ['meeting', 'reminder']
-            for priority_type in priority_types:
-                patterns = self.command_patterns.get(priority_type, [])
-                for pattern in patterns:
-                    if pattern.lower() in text:
-                        command_type = priority_type
-                        # Извлекаем оставшуюся часть текста как описание
-                        description = text.replace(pattern.lower(), '').strip()
-                        if description:
-                            entities['description'] = description
-                        self.update_context(command_type)
-                        logger.info(f"Распознана приоритетная команда типа {priority_type}: {text}")
-                        logger.debug(f"Извлечено описание: {description}")
-                        return command_type, entities
-            
-            # Затем проверяем остальные типы команд
+            confidence_scores = {}
+
             for intent, patterns in self.command_patterns.items():
-                if intent not in priority_types:
-                    for pattern in patterns:
-                        if pattern.lower() in text:
-                            command_type = intent
-                            description = text.replace(pattern.lower(), '').strip()
-                            if description:
-                                entities['description'] = description
-                            self.update_context(command_type)
-                            logger.info(f"Распознана команда типа {intent}: {text}")
-                            logger.debug(f"Извлечено описание: {description}")
-                            return command_type, entities
-            
-            # Если команда не распознана, сохраняем текст как описание
-            if text:
-                entities['description'] = text
-                logger.warning(f"Команда не распознана, сохранён текст: {text}")
-            
+                confidence = self._calculate_command_confidence(cleaned_text, patterns)
+                confidence_scores[intent] = confidence
+                if confidence > self.confidence_threshold:
+                    command_type = intent
+                    break
+
+            #Extract Entities based on command type
+            if command_type in self.entity_extractors:
+                extracted_entities = self.entity_extractors[command_type](cleaned_text)
+                entities.update(extracted_entities)
+            elif command_type == 'greeting':
+                entities['greeting'] = True
+
+
+            self.update_context(command_type, entities)
+            logger.info(f"Recognized command type: {command_type}, Entities: {entities}")
             return command_type, entities
-            
+
         except Exception as e:
-            logger.error(f"Ошибка при анализе текста: {str(e)}", exc_info=True)
+            logger.error(f"Error analyzing text: {str(e)}", exc_info=True)
             return 'unknown', {'error': str(e)}
+
+    def _extract_task_details(self, text: str) -> Dict:
+        #Example - improve this to extract actual task details.
+        match = re.search(r'задача (.*)', text)
+        task_description = match.group(1) if match else "No description found"
+        return {'task_description': task_description}
+
+    def _extract_project_details(self, text:str) -> Dict:
+        #Example - improve this to extract actual project details.
+        match = re.search(r'проект (.*)', text)
+        project_name = match.group(1) if match else "No project name found"
+        return {'project_name': project_name}

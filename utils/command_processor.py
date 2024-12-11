@@ -5,21 +5,64 @@ from typing import Dict
 
 logger = logging.getLogger(__name__)
 
+class CommandProcessor:
+    def __init__(self):
+        self.context = {}
+    
+    def process_command(self, command_type: str, entities: Dict) -> str:
+        """Process the command based on its type and context"""
+        logger.info(f"Processing command of type: {command_type} with entities: {entities}")
+        
+        try:
+            # Приветствие с учетом времени суток
+            if command_type == 'greeting':
+                hour = datetime.now().hour
+                greeting = (
+                    "Доброе утро" if 5 <= hour < 12
+                    else "Добрый день" if 12 <= hour < 17
+                    else "Добрый вечер" if 17 <= hour < 23
+                    else "Доброй ночи"
+                )
+                return f"{greeting}! Я - ваш бизнес-ассистент ТЕРРА. Чем могу помочь?"
+            
+            elif command_type == 'task_creation':
+                return format_task_creation(entities.get('description', ''))
+            
+            # Обработка бизнес-команд
+            business_commands = [
+                'marketing', 'client', 'supplier', 'contract',
+                'quality', 'risk', 'strategy', 'compliance',
+                'innovation', 'document', 'search', 'contact',
+                'project', 'analytics', 'employee'
+            ]
+            
+            if command_type in business_commands:
+                return format_business_command(command_type, entities.get('description', ''))
+            
+            return "Извините, я не распознал команду. Пожалуйста, попробуйте переформулировать."
+            
+        except Exception as e:
+            logger.error(f"Error processing command: {str(e)}", exc_info=True)
+            return f"Произошла ошибка при обработке команды: {str(e)}"
+
+command_processor = CommandProcessor()
+
+def process_command(command_type: str, entities: Dict) -> str:
+    """Global function to process commands"""
+    return command_processor.process_command(command_type, entities)
+
 def format_task_creation(description: str) -> str:
     """Format task creation response with parsed details"""
     if not description:
         return "Пожалуйста, укажите описание задачи"
 
-    # Логируем исходный текст
     logger.info(f"Исходный текст задачи: '{description}'")
     
-    # Проверяем приоритет по наличию слова "срочн"
     priority = 'высокий' if 'срочн' in description.lower() else 'обычный'
     logger.info(f"Определен приоритет: {priority}")
     
-    # Шаг 2: Очищаем текст от служебных слов
     cleaners = [
-        r't?[еэ]рр?а?[,]?\s*',  # Улучшенное распознавание вариаций "тера/терра"
+        r't?[еэ]рр?а?[,]?\s*',
         r'создай(?:те)?\s+',
         r'создать\s+',
         r'добавь(?:те)?\s+',
@@ -34,17 +77,13 @@ def format_task_creation(description: str) -> str:
         r'[\s,\-–]+$'
     ]
     
-    # Очищаем текст
     for pattern in cleaners:
         old_text = description
         description = re.sub(pattern, '', description, flags=re.IGNORECASE)
         if old_text != description:
             logger.info(f"Применен паттерн очистки: '{pattern}' -> '{description}'")
     
-    # Шаг 3: Обработка даты и времени
     task_date = None
-    
-    # Поиск даты
     date_words = {
         'завтра': timedelta(days=1),
         'послезавтра': timedelta(days=2),
@@ -60,7 +99,6 @@ def format_task_creation(description: str) -> str:
             logger.info(f"Найдена дата по слову '{word}': {task_date}")
             break
     
-    # Поиск времени
     time_match = re.search(r'в\s+(\d{1,2})(?:[:.:](\d{2}))?\s*(?:час[оа]в?|час|ч)?', description)
     if time_match:
         hours = int(time_match.group(1))
@@ -77,16 +115,12 @@ def format_task_creation(description: str) -> str:
             description = re.sub(r'в\s+\d{1,2}(?:[:.:]?\d{2})?\s*(?:час[оа]в?|час|ч)?\s*', '', description)
             logger.info(f"Найдено время: {hours}:{minutes:02d}")
     
-    # Шаг 4: Финальная очистка описания
     description = ' '.join(word for word in description.split() if word)
-    # Удаляем точку в конце, если она есть
     description = description.rstrip('.')
-    logger.info(f"Финальное описание: '{description}'")
     
-    # Шаг 5: Формируем ответ
     response_parts = [
         "✅ Создаю новую задачу:",
-        f"\n📝 Описание: {description.capitalize()}",
+        f"\n📝 Описание: {description.capitalize()}"
     ]
     
     if task_date:
@@ -100,38 +134,8 @@ def format_task_creation(description: str) -> str:
     
     return ''.join(response_parts)
 
-class CommandProcessor:
-    def __init__(self):
-        self.context = {}
-    
-    def process_command(self, command_type: str, entities: Dict) -> str:
-        """Process the command based on its type"""
-        logger.info(f"Processing command of type: {command_type} with entities: {entities}")
-        
-        if command_type == 'greeting':
-            return "Здравствуйте! Я - ваш бизнес-ассистент ТЕРРА. Чем могу помочь?"
-        
-        if command_type == 'task_creation':
-            return format_task_creation(entities.get('description', ''))
-            
-        # Обработка бизнес-команд
-        business_commands = [
-            'marketing', 'client', 'supplier', 'contract',
-            'quality', 'risk', 'strategy', 'compliance',
-            'innovation', 'document', 'search', 'contact',
-            'project', 'analytics', 'employee'  # Добавляем новые типы команд
-        ]
-        
-        if command_type in business_commands:
-            return format_business_command(command_type, entities.get('description', ''))
-        
-        return "Извините, я не распознал команду. Пожалуйста, попробуйте переформулировать."
-
-# Create a singleton instance
-command_processor = CommandProcessor()
-
 def format_business_command(command_type: str, description: str) -> str:
-    """Format business command response with extended functionality"""
+    """Format business command response"""
     logger.info(f"Форматирование бизнес-команды типа: {command_type}")
     logger.debug(f"Исходное описание: '{description}'")
     
@@ -139,258 +143,38 @@ def format_business_command(command_type: str, description: str) -> str:
         logger.warning("Пустое описание команды")
         return f"Пожалуйста, укажите описание для команды типа {command_type}"
     
-    # Очищаем описание от служебных слов
-    cleaners = [
-        r't?[еэ]рр?а?[,]?\s*',
-        r'создай(?:те)?\s+',
-        r'создать\s+',
-        r'нов(?:ый|ую|ое)\s+',
-        r'показать\s+',
-        r'покажи\s+',
-        r'подготовить\s+',
-        r'запусти(?:ть)?\s+',
-        r'начать\s+',
-        r'установить\s+',
-        r'назначить\s+',
-        r'добавить\s+',
-        r'^[\s,\-–]+',
-        r'[\s,\-–]+$'
-    ]
-    
-    for pattern in cleaners:
-        old_desc = description
-        description = re.sub(pattern, '', description, flags=re.IGNORECASE)
-        if old_desc != description:
-            logger.debug(f"Применен паттерн '{pattern}': '{old_desc}' -> '{description}'")
-    
-    # Форматируем ответ в зависимости от типа команды
-    # Извлекаем специальные параметры из описания
-    params = {}
-    
-    # Упрощенный поиск суммы и валюты
-    amount_pattern = r'(\d+(?:[,.]\d{1,2})?)\s*([$€₽]|руб(?:лей|ля|\.)?|долл(?:ар(?:ов|а|ы)?)?|евро)'
-    amount_match = re.search(amount_pattern, description, re.IGNORECASE)
-    
-    if amount_match:
-        amount = float(amount_match.group(1).replace(',', '.'))
-        currency_text = amount_match.group(2).lower() if amount_match.group(2) else 'руб'
-        
-        # Простое определение валюты
-        if any(usd in currency_text for usd in ['$', 'долл']):
-            currency = 'USD'
-        elif any(eur in currency_text for eur in ['€', 'евро']):
-            currency = 'EUR'
-        else:
-            currency = 'RUB'
-            
-        params['amount'] = amount
-        params['currency'] = currency
-        
-        # Сохраняем текст до и после суммы
-        start, end = amount_match.span()
-        description = description[:start].strip() + ' ' + description[end:].strip()
-        description = ' '.join(description.split())
-    
-    # Простое определение типа операции
-    income_words = ['доход', 'поступление', 'получение', 'зачисление', 'внести']
-    expense_words = ['расход', 'трата', 'платеж', 'оплата', 'покупка', 'на', 'за']
-    
-    text_lower = description.lower()
-    
-    # Определяем тип операции
-    if any(word in text_lower for word in income_words):
-        operation_type = 'Доход'
-    elif any(word in text_lower for word in expense_words):
-        operation_type = 'Расход'
-    else:
-        operation_type = 'Платёж'  # Значение по умолчанию
-        
-    params['operation_type'] = operation_type
-    
-    # Очищаем описание от служебных слов
-    for word in income_words + expense_words:
-        description = re.sub(rf'\b{word}\w*\b', '', description, flags=re.IGNORECASE)
-    
-    # Обработка проектных команд
-    if command_type == 'project':
-        # Поиск статуса проекта
-        status_words = {
-            'новый': 'Новый',
-            'в работе': 'В работе',
-            'на паузе': 'На паузе',
-            'завершен': 'Завершён',
-            'отменен': 'Отменён'
-        }
-        
-        for word, status in status_words.items():
-            if word in description.lower():
-                params['status'] = status
-                description = re.sub(rf'\b{word}\b', '', description, flags=re.IGNORECASE)
-        
-        # Поиск приоритета
-        priority_words = {
-            'срочно': 'Высокий',
-            'срочный': 'Высокий',
-            'важно': 'Высокий',
-            'критично': 'Критический',
-            'обычный': 'Обычный',
-            'низкий': 'Низкий'
-        }
-        
-        for word, priority in priority_words.items():
-            if word in description.lower():
-                params['priority'] = priority
-                description = re.sub(rf'\b{word}\b', '', description, flags=re.IGNORECASE)
-    
-    description = ' '.join(description.split())
-    
-    # Ищем сроки
-    deadline_match = re.search(r'до\s+(\d{1,2})[.\-](\d{1,2})(?:[.\-](\d{4})|)', description)
-    if deadline_match:
-        day, month = deadline_match.group(1), deadline_match.group(2)
-        year = deadline_match.group(3) if deadline_match.group(3) else str(datetime.now().year)
-        params['deadline'] = f"{day}.{month}.{year}"
-        description = re.sub(r'до\s+\d{1,2}[.\-]\d{1,2}(?:[.\-]\d{4}|)\s*', '', description)
-    
-    # Ищем приоритет и статус
-    priority_words = {
-        'срочно': 'высокий',
-        'срочный': 'высокий',
-        'важно': 'высокий',
-        'критично': 'критический',
-        'критический': 'критический',
-        'низкий': 'низкий',
-        'обычный': 'средний'
-    }
-    
-    status_words = {
-        'в работе': 'in_progress',
-        'выполняется': 'in_progress',
-        'завершен': 'completed',
-        'завершён': 'completed',
-        'готов': 'completed',
-        'отложен': 'on_hold',
-        'приостановлен': 'on_hold',
-        'отменен': 'cancelled',
-        'отменён': 'cancelled'
-    }
-    for word, priority in priority_words.items():
-        if word in description.lower():
-            params['priority'] = priority
-            description = re.sub(rf'\s*{word}\s*', '', description, flags=re.IGNORECASE)
-            
-    # Ищем статус
-    for word, status in status_words.items():
-        if word in description.lower():
-            params['status'] = status
-            description = re.sub(rf'\s*{word}\s*', '', description, flags=re.IGNORECASE)
-            
-    # Ищем команду проекта
-    team_match = re.search(r'команда:?\s*([^,.]+)', description, re.IGNORECASE)
-    if team_match:
-        params['team'] = team_match.group(1).strip()
-        description = re.sub(r'команда:?\s*[^,.]+[,.]?\s*', '', description, flags=re.IGNORECASE)
-        
-    # Ищем этап проекта
-    stage_match = re.search(r'этап:?\s*([^,.]+)', description, re.IGNORECASE)
-    if stage_match:
-        params['stage'] = stage_match.group(1).strip()
-        description = re.sub(r'этап:?\s*[^,.]+[,.]?\s*', '', description, flags=re.IGNORECASE)
-    
     responses = {
         'finance': {
             'icon': '💰',
             'action': 'Финансовая операция',
-            'extra_info': lambda p: '\n'.join([
-                f"📊 Тип: {p['operation_type']}",
-                f"💵 Сумма: {p['amount']:,.2f} {p['currency']}",
-                f"📝 Назначение: {description.strip().capitalize()}",
-                "✨ Операция зарегистрирована"
-            ])
+            'category': 'Финансы'
         },
         'marketing': {
             'icon': '📢',
-            'action': 'Создаю маркетинговую задачу',
-            'category': 'Маркетинг',
-            'extra_info': lambda p: f"\n🎯 Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
-        },
-        'employee': {
-            'icon': '👤',
-            'action': 'Обрабатываю запрос по персоналу',
-            'category': 'Управление персоналом',
-            'extra_info': lambda p: f"\n📅 Срок: {p.get('deadline', 'Не указан')}" if 'deadline' in p else ''
+            'action': 'Маркетинговая задача',
+            'category': 'Маркетинг'
         },
         'project': {
             'icon': '📊',
             'action': 'Проектная задача',
-            'extra_info': lambda p: '\n'.join([
-                f"📝 Описание: {description.strip().capitalize()}",
-                f"🎯 Приоритет: {p.get('priority', 'Обычный')}",
-                f"📊 Статус: {p.get('status', 'Новый')}",
-                f"📅 Срок: {p.get('deadline', 'Не указан')}",
-                "✨ Проект зарегистрирован"
-            ])
-        },
-        'analytics': {
-            'icon': '📈',
-            'action': 'Формирую аналитический отчет',
-            'category': 'Бизнес-аналитика',
-            'extra_info': lambda p: f"\n⚡ Приоритет: {p.get('priority', 'обычный').capitalize()}" if 'priority' in p else ''
+            'category': 'Управление проектами'
         },
         'client': {
             'icon': '👥',
-            'action': 'Создаю запись клиента',
+            'action': 'Работа с клиентом',
             'category': 'Клиенты'
-        },
-        'supplier': {
-            'icon': '🏭',
-            'action': 'Создаю запись поставщика',
-            'category': 'Поставщики'
-        },
-        'contract': {
-            'icon': '📋',
-            'action': 'Создаю договор',
-            'category': 'Договоры'
-        },
-        'quality': {
-            'icon': '✨',
-            'action': 'Создаю задачу контроля качества',
-            'category': 'Качество'
-        },
-        'risk': {
-            'icon': '⚠️',
-            'action': 'Создаю запись о риске',
-            'category': 'Риски'
-        },
-        'strategy': {
-            'icon': '🎯',
-            'action': 'Создаю стратегическую задачу',
-            'category': 'Стратегия'
         }
     }
     
     response_info = responses.get(command_type, {
         'icon': '📝',
-        'action': 'Обрабатываю команду',
+        'action': 'Выполняю команду',
         'category': command_type.capitalize()
     })
     
-    response_parts = [
-        f"{response_info['icon']} {response_info['action']}:",
-        f"\n📝 Описание: {description.capitalize()}",
-        f"\n📁 Категория: {response_info['category']}"
-    ]
-    
-    # Добавляем дополнительную информацию, если она есть
-    if 'extra_info' in response_info:
-        extra = response_info['extra_info'](params)
-        if extra:
-            response_parts.append(extra)
-    
-    response_parts.append("\n✨ Запись успешно создана и добавлена в систему.")
-    
-    return ''.join(response_parts)
-
-def process_command(command_type: str, entities: Dict) -> str:
-    """Global function to process commands"""
-    return command_processor.process_command(command_type, entities)
+    return (
+        f"{response_info['icon']} {response_info['action']}:\n"
+        f"📝 Описание: {description.capitalize()}\n"
+        f"📁 Категория: {response_info['category']}\n"
+        "✨ Задача успешно добавлена в систему."
+    )
