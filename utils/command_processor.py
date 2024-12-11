@@ -2,7 +2,42 @@ import logging
 from typing import Dict
 import re
 
+import re
+from datetime import datetime, timedelta
 logger = logging.getLogger(__name__)
+
+def format_task_creation(description: str) -> str:
+    """Format task creation response with parsed details"""
+    if not description:
+        return "Пожалуйста, укажите описание задачи"
+        
+    # Очищаем описание от лишних слов
+    description = re.sub(r'^(тера|терра|terra),?\s*', '', description.lower())
+    
+    # Поиск даты в описании
+    date_keywords = {
+        'завтра': datetime.now() + timedelta(days=1),
+        'сегодня': datetime.now(),
+        'послезавтра': datetime.now() + timedelta(days=2)
+    }
+    
+    task_date = None
+    for keyword, date in date_keywords.items():
+        if keyword in description:
+            task_date = date
+            description = description.replace(keyword, '').strip()
+            break
+    
+    # Формируем ответ
+    response = "✅ Создаю новую задачу:\n\n"
+    response += f"📝 Описание: {description.capitalize()}\n"
+    
+    if task_date:
+        response += f"📅 Дата: {task_date.strftime('%d.%m.%Y')}\n"
+    
+    response += "\nЗадача успешно создана и добавлена в систему."
+    
+    return response
 
 class CommandProcessor:
     def __init__(self):
@@ -86,7 +121,7 @@ class CommandProcessor:
             'quality': self.handle_quality,
             'risk': self.handle_risk,
             'strategy': self.handle_strategy,
-            'task_creation': lambda x: "Создаю новую задачу: " + x.get('description', 'без описания'),
+            'task_creation': lambda x: format_task_creation(x.get('description', '')),
             'document_analysis': lambda x: "Анализирую документ: " + x.get('description', 'не указан'),
             'search': lambda x: "Ищу информацию по запросу: " + x.get('description', 'не указан'),
             'calendar': lambda x: "Работаю с календарем: " + x.get('description', 'нет деталей'),
