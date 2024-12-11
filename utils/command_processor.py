@@ -19,15 +19,17 @@ def format_task_creation(description: str) -> str:
     
     # Шаг 2: Очищаем текст от служебных слов
     cleaners = [
-        r'терра\s*[,]?\s*',
-        r'создай\s+',
+        r't?[еэ]рр?а\s*[,]?\s*',  # Учитываем возможные опечатки в слове "терра"
+        r'создай(?:те)?\s+',
         r'создать\s+',
-        r'добавь\s+',
+        r'добавь(?:те)?\s+',
         r'добавить\s+',
+        r'постав(?:ь|ите)?\s+',
         r'срочную?\s+',
         r'важную?\s+',
         r'критичную?\s+',
-        r'задачу\s+',
+        r'задачу\s*',
+        r'поручение\s*',
         r'^[\s,\-–]+',
         r'[\s,\-–]+$'
     ]
@@ -83,20 +85,20 @@ def format_task_creation(description: str) -> str:
     
     # Шаг 5: Формируем ответ
     response_parts = [
-        "✅ Создаю новую задачу:\n",
-        f"📝 Описание: {description.capitalize()}"
+        "✅ Создаю новую задачу:",
+        f"\n📝 Описание: {description.capitalize()}",
     ]
     
     if task_date:
         date_format = '%d.%m.%Y в %H:%M' if task_date.hour != 0 or task_date.minute != 0 else '%d.%m.%Y'
-        response_parts.append(f"📅 {'Дата и время' if 'в' in date_format else 'Дата'}: {task_date.strftime(date_format)}")
+        response_parts.append(f"\n📅 {'Дата и время' if 'в' in date_format else 'Дата'}: {task_date.strftime(date_format)}")
     
     response_parts.extend([
-        f"⚡ Приоритет: {priority.capitalize()}",
-        "✨ Задача успешно создана и добавлена в систему."
+        f"\n⚡ Приоритет: {priority.capitalize()}",
+        "\n✨ Задача успешно создана и добавлена в систему."
     ])
     
-    return '\n'.join(response_parts)
+    return ''.join(response_parts)
 
 class CommandProcessor:
     def __init__(self):
