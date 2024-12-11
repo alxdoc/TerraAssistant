@@ -590,6 +590,118 @@ class CommandProcessor:
 
         return responses.get(action or 'unknown', lambda: "Не удалось определить действие со встречей. Пожалуйста, уточните команду.")()
 
+    def handle_compliance(self, entities: Dict) -> str:
+        """Handle compliance management commands"""
+        description = entities.get('description', '').lower()
+        if not description:
+            return "Пожалуйста, уточните операцию по соответствию нормативам"
+
+        compliance_actions = {
+            'проверка': 'audit',
+            'требования': 'requirements',
+            'отчет': 'report',
+            'статус': 'status',
+            'риски': 'risks',
+            'обучение': 'training'
+        }
+
+        action = None
+        for key, value in compliance_actions.items():
+            if key in description:
+                action = value
+                break
+
+        responses = {
+            'audit': lambda: "Аудит соответствия:\n" + \
+                           "Проверено процессов: 25\n" + \
+                           "Выявлено нарушений: 3\n" + \
+                           "Критических: 0\n" + \
+                           "Рекомендации: 8",
+            'requirements': lambda: "Нормативные требования:\n" + \
+                                  "Всего требований: 156\n" + \
+                                  "Выполняется: 148\n" + \
+                                  "На доработке: 8\n" + \
+                                  "Новых: 12",
+            'report': lambda: "Отчет по соответствию:\n" + \
+                            "Общий уровень: 95%\n" + \
+                            "Улучшение: +5%\n" + \
+                            "Открытых вопросов: 7\n" + \
+                            "Штрафы: 0",
+            'status': lambda: "Статус соответствия:\n" + \
+                            "Соответствие законам: 100%\n" + \
+                            "Внутренним политикам: 98%\n" + \
+                            "Отраслевым стандартам: 95%\n" + \
+                            "Лицензии: Актуальны",
+            'risks': lambda: "Риски несоответствия:\n" + \
+                           "Выявлено: 15\n" + \
+                           "В работе: 4\n" + \
+                           "Устранено: 11\n" + \
+                           "Критических: 0",
+            'training': lambda: "Обучение по комплаенс:\n" + \
+                              "Курсов проведено: 8\n" + \
+                              "Обучено сотрудников: 450\n" + \
+                              "Успешная сдача: 97%\n" + \
+                              "Следующий курс: 15.01.2025"
+        }
+
+        return responses.get(action or 'unknown', lambda: "Не удалось определить операцию по комплаенс. Пожалуйста, уточните команду.")()
+
+    def handle_innovation(self, entities: Dict) -> str:
+        """Handle innovation management commands"""
+        description = entities.get('description', '').lower()
+        if not description:
+            return "Пожалуйста, уточните операцию по управлению инновациями"
+
+        innovation_actions = {
+            'проекты': 'projects',
+            'идеи': 'ideas',
+            'статус': 'status',
+            'бюджет': 'budget',
+            'результаты': 'results',
+            'технологии': 'technologies'
+        }
+
+        action = None
+        for key, value in innovation_actions.items():
+            if key in description:
+                action = value
+                break
+
+        responses = {
+            'projects': lambda: "Инновационные проекты:\n" + \
+                              "Всего проектов: 12\n" + \
+                              "В разработке: 5\n" + \
+                              "На тестировании: 3\n" + \
+                              "Завершено: 4",
+            'ideas': lambda: "Банк инновационных идей:\n" + \
+                           "Всего идей: 85\n" + \
+                           "На рассмотрении: 15\n" + \
+                           "Одобрено: 7\n" + \
+                           "В реализации: 4",
+            'status': lambda: "Статус инноваций:\n" + \
+                            "Успешные внедрения: 8\n" + \
+                            "Пилотные проекты: 3\n" + \
+                            "Патенты: 2\n" + \
+                            "Прототипы: 5",
+            'budget': lambda: f"Бюджет на инновации:\n" + \
+                            f"Общий бюджет: {self._format_currency(25000000)} руб.\n" + \
+                            f"Израсходовано: {self._format_currency(12000000)} руб.\n" + \
+                            "ROI: 145%\n" + \
+                            "Экономический эффект: Высокий",
+            'results': lambda: "Результаты инноваций:\n" + \
+                             "Новые продукты: 3\n" + \
+                             "Улучшение процессов: 15%\n" + \
+                             "Экономия: " + self._format_currency(8000000) + " руб.\n" + \
+                             "Удовлетворенность: 92%",
+            'technologies': lambda: "Новые технологии:\n" + \
+                                  "Внедрено: 5\n" + \
+                                  "В процессе: 3\n" + \
+                                  "На изучении: 7\n" + \
+                                  "Потенциал: Высокий"
+        }
+
+        return responses.get(action or 'unknown', lambda: "Не удалось определить операцию с инновациями. Пожалуйста, уточните команду.")()
+
     def handle_marketing(self, entities: Dict) -> str:
         """Handle marketing-related commands"""
         description = entities.get('description', '').lower()
@@ -645,6 +757,118 @@ class CommandProcessor:
         }
 
         return responses.get(action or 'unknown', lambda: "Не удалось определить тип маркетинговой операции. Пожалуйста, уточните команду.")()
+
+    def handle_risk(self, entities: Dict) -> str:
+        """Handle risk management commands"""
+        description = entities.get('description', '').lower()
+        if not description:
+            return "Пожалуйста, уточните операцию по управлению рисками"
+
+        risk_actions = {
+            'анализ': 'analysis',
+            'оценка': 'assessment',
+            'митигация': 'mitigation',
+            'мониторинг': 'monitoring',
+            'отчет': 'report',
+            'реестр': 'registry'
+        }
+
+        action = None
+        for key, value in risk_actions.items():
+            if key in description:
+                action = value
+                break
+
+        responses = {
+            'analysis': lambda: "Анализ рисков:\n" + \
+                              "Критические риски: 3\n" + \
+                              "Высокие риски: 7\n" + \
+                              "Средние риски: 12\n" + \
+                              "Низкие риски: 25",
+            'assessment': lambda: "Оценка рисков:\n" + \
+                                "Финансовые риски: Высокие\n" + \
+                                "Операционные риски: Средние\n" + \
+                                "Репутационные риски: Низкие\n" + \
+                                "Compliance риски: Средние",
+            'mitigation': lambda: "План митигации рисков:\n" + \
+                                "Мероприятий запланировано: 15\n" + \
+                                "В процессе: 8\n" + \
+                                "Завершено: 4\n" + \
+                                "Эффективность: 75%",
+            'monitoring': lambda: "Мониторинг рисков:\n" + \
+                                "Новые риски: 3\n" + \
+                                "Изменение уровня: 5\n" + \
+                                "Закрытые риски: 2\n" + \
+                                "Требуют внимания: 4",
+            'report': lambda: "Отчет по рискам:\n" + \
+                            "Период: Q4 2024\n" + \
+                            "Общий уровень: Средний\n" + \
+                            "Тренд: Снижение\n" + \
+                            "Статус контролей: Эффективны",
+            'registry': lambda: "Реестр рисков:\n" + \
+                              "Всего рисков: 47\n" + \
+                              "Активных: 35\n" + \
+                              "На контроле: 12\n" + \
+                              "Требуют обновления: 5"
+        }
+
+        return responses.get(action or 'unknown', lambda: "Не удалось определить операцию с рисками. Пожалуйста, уточните команду.")()
+
+    def handle_strategy(self, entities: Dict) -> str:
+        """Handle strategic management commands"""
+        description = entities.get('description', '').lower()
+        if not description:
+            return "Пожалуйста, уточните операцию по стратегическому управлению"
+
+        strategy_actions = {
+            'цели': 'goals',
+            'кпэ': 'kpi',
+            'анализ': 'analysis',
+            'прогресс': 'progress',
+            'инициативы': 'initiatives',
+            'результаты': 'results'
+        }
+
+        action = None
+        for key, value in strategy_actions.items():
+            if key in description:
+                action = value
+                break
+
+        responses = {
+            'goals': lambda: "Стратегические цели:\n" + \
+                           "1. Рост выручки на 25%\n" + \
+                           "2. Выход на новые рынки\n" + \
+                           "3. Цифровая трансформация\n" + \
+                           "4. Повышение эффективности",
+            'kpi': lambda: "Ключевые показатели:\n" + \
+                         f"Выручка: {self._format_currency(150000000)} руб.\n" + \
+                         "Доля рынка: 15%\n" + \
+                         "NPS: 82\n" + \
+                         "Рентабельность: 23%",
+            'analysis': lambda: "Стратегический анализ:\n" + \
+                              "Сильные стороны: 5\n" + \
+                              "Возможности: 4\n" + \
+                              "Угрозы: 3\n" + \
+                              "Конкурентные преимущества: 6",
+            'progress': lambda: "Прогресс реализации стратегии:\n" + \
+                              "Общий прогресс: 68%\n" + \
+                              "Проектов запущено: 12\n" + \
+                              "Достигнуто целей: 7/15\n" + \
+                              "Следующая веха: Q1 2025",
+            'initiatives': lambda: "Стратегические инициативы:\n" + \
+                                 "Всего: 24\n" + \
+                                 "В работе: 15\n" + \
+                                 "Завершено: 6\n" + \
+                                 "Планируется: 3",
+            'results': lambda: "Результаты стратегии:\n" + \
+                             "Рост выручки: +18%\n" + \
+                             "Новые продукты: 5\n" + \
+                             "Новые рынки: 2\n" + \
+                             "ROI: 156%"
+        }
+
+        return responses.get(action or 'unknown', lambda: "Не удалось определить операцию со стратегией. Пожалуйста, уточните команду.")()
 
     def handle_client(self, entities: Dict) -> str:
         """Handle client-related commands"""
