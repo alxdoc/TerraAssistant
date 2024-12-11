@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 # Настройка логирования
 logging.basicConfig(level=logging.DEBUG)
@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 class DialogContext:
     def __init__(self):
-        self.current_topic = None
+        self.current_topic: Optional[str] = None
+        self.last_command_type: Optional[str] = None
         self.command_patterns = {
             'task_creation': [
                 'создать задачу', 'новая задача', 'добавить заявку',
@@ -72,21 +73,21 @@ class DialogContext:
             ]
         }
 
-    def get_context(self):
+    def get_context(self) -> Dict:
         """Возвращает текущий контекст диалога"""
         return {
             'topic': self.current_topic,
             'entities': {},
-            'last_command_type': getattr(self, 'last_command_type', None)
+            'last_command_type': self.last_command_type
         }
 
-    def update_context(self, command_type: str):
+    def update_context(self, command_type: str) -> None:
         """Обновляет контекст диалога"""
         self.last_command_type = command_type
         if command_type != 'greeting':
             self.current_topic = command_type
 
-def analyze_text(self, text: str) -> Tuple[str, Dict]:
+    def analyze_text(self, text: str) -> Tuple[str, Dict]:
         """Анализирует текст и возвращает намерение и сущности"""
         try:
             logger.debug(f"Анализ текста: {text}")
@@ -94,7 +95,7 @@ def analyze_text(self, text: str) -> Tuple[str, Dict]:
             
             # Определяем тип команды и сущности
             command_type = 'unknown'
-            entities = {}
+            entities: Dict = {}
             
             # Очищаем текст от ключевого слова "терра"
             text = text.replace('терра', '').replace('terra', '').strip()

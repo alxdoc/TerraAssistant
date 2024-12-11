@@ -47,22 +47,36 @@ class CommandProcessor:
 
     def process_command(self, command_type: str, entities: Dict) -> str:
         """Process command based on its type"""
+        if not command_type:
+            logger.warning("Empty command type received")
+            return self.format_error("Тип команды не может быть пустым")
+            
         try:
             logger.debug(f"Processing command type: {command_type} with entities: {entities}")
             
             # Получаем обработчик команды
-            handler = self.command_handlers.get(command_type, self.command_handlers['unknown'])
+            handler = self.command_handlers.get(command_type)
+            if not handler:
+                logger.warning(f"Unknown command type: {command_type}")
+                return self.command_handlers['unknown'](entities)
+                
+            # Выполняем команду
             result = handler(entities)
             
             # Сохраняем команду в базу данных
-            self.save_command(command_type, result)
-            
+            try:
+                self.save_command(command_type, result)
+            except Exception as db_error:
+                logger.error(f"Error saving command to database: {str(db_error)}")
+                # Продолжаем выполнение даже при ошибке сохранения
+                
             logger.info(f"Command processed successfully: {result}")
             return result
             
         except Exception as e:
-            logger.error(f"Error processing command: {str(e)}", exc_info=True)
-            return self.format_error(str(e))
+            error_msg = f"Error processing command {command_type}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            return self.format_error(error_msg)
 
     def handle_greeting(self, entities: Dict) -> str:
         """Handle greeting command"""
@@ -459,7 +473,7 @@ class CommandProcessor:
                               "Тренд: Восходящий",
         }
 
-        return responses.get(analysis_type, lambda: "Не удалось определить тип аналитики. Пожалуйста, уточните запрос.")()
+        return responses.get(analysis_type or 'unknown', lambda: "Не удалось определить тип аналитики. Пожалуйста, уточните запрос.")()
 
     def handle_employee(self, entities: Dict) -> str:
         """Handle employee management commands"""
@@ -516,7 +530,7 @@ class CommandProcessor:
                                  "Сертификации: 1",
         }
 
-        return responses.get(action, lambda: "Не удалось определить действие с данными сотрудника. Пожалуйста, уточните команду.")()
+        return responses.get(action or 'unknown', lambda: "Не удалось определить действие с данными сотрудника. Пожалуйста, уточните команду.")()
 
     def handle_meeting(self, entities: Dict) -> str:
         """Handle meeting organization commands"""
@@ -566,7 +580,7 @@ class CommandProcessor:
                                   "Ожидание ответа: 1",
         }
 
-        return responses.get(action, lambda: "Не удалось определить действие со встречей. Пожалуйста, уточните команду.")()
+        return responses.get(action or 'unknown', lambda: "Не удалось определить действие со встречей. Пожалуйста, уточните команду.")()
 
     def format_error(self, details: str) -> str:
         """Format error message"""

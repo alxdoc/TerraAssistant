@@ -12,10 +12,6 @@ from models import init_db
 logging.getLogger('werkzeug').setLevel(logging.INFO)
 logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
 
-# Настройка логирования для внешних библиотек
-logging.getLogger('werkzeug').setLevel(logging.INFO)
-logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
-
 # Настройка логирования
 logging.basicConfig(
     level=logging.DEBUG,
