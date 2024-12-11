@@ -18,13 +18,54 @@ def format_task_creation(description: str) -> str:
     date_keywords = {
         'завтра': datetime.now() + timedelta(days=1),
         'сегодня': datetime.now(),
-        'послезавтра': datetime.now() + timedelta(days=2)
+        'послезавтра': datetime.now() + timedelta(days=2),
+        'через день': datetime.now() + timedelta(days=1),
+        'через неделю': datetime.now() + timedelta(weeks=1),
+        'через месяц': datetime.now() + timedelta(days=30)
     }
     
+    # Поиск времени в описании
+    time_pattern = r'в (\d{1,2})(?::(\d{2}))?\s*(?:часов|час|ч)?'
+    
     task_date = None
+    task_time = None
+    
+    # Проверяем дату
     for keyword, date in date_keywords.items():
         if keyword in description:
             task_date = date
+            description = description.replace(keyword, '').strip()
+            break
+    
+    # Проверяем время
+    time_match = re.search(time_pattern, description)
+    if time_match:
+        hours = int(time_match.group(1))
+        minutes = int(time_match.group(2)) if time_match.group(2) else 0
+        
+        if 0 <= hours <= 23 and 0 <= minutes <= 59:
+            if task_date:
+                task_date = task_date.replace(hour=hours, minute=minutes)
+            else:
+                task_date = datetime.now().replace(hour=hours, minute=minutes)
+                if task_date < datetime.now():
+                    task_date += timedelta(days=1)
+            
+            description = re.sub(time_pattern, '', description).strip()
+    
+    # Определяем приоритет по ключевым словам
+    priority = 'обычный'
+    priority_keywords = {
+        'срочно': 'высокий',
+        'важно': 'высокий',
+        'критично': 'высокий',
+        'неважно': 'низкий',
+        'некритично': 'низкий'
+    }
+    
+    for keyword, level in priority_keywords.items():
+        if keyword in description:
+            priority = level
             description = description.replace(keyword, '').strip()
             break
     
@@ -33,8 +74,12 @@ def format_task_creation(description: str) -> str:
     response += f"📝 Описание: {description.capitalize()}\n"
     
     if task_date:
-        response += f"📅 Дата: {task_date.strftime('%d.%m.%Y')}\n"
+        if task_date.hour != 0 or task_date.minute != 0:
+            response += f"📅 Дата и время: {task_date.strftime('%d.%m.%Y в %H:%M')}\n"
+        else:
+            response += f"📅 Дата: {task_date.strftime('%d.%m.%Y')}\n"
     
+    response += f"⚡ Приоритет: {priority.capitalize()}\n"
     response += "\nЗадача успешно создана и добавлена в систему."
     
     return response
