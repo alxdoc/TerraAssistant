@@ -14,42 +14,27 @@ def format_task_creation(description: str) -> str:
     # Определяем приоритет по ключевым словам в исходном тексте
     priority = 'обычный'
     priority_keywords = {
-        'срочно': 'высокий',
-        'срочную': 'высокий',
-        'срочная': 'высокий',
-        'срочное': 'высокий',
-        'срочный': 'высокий',
-        'важно': 'высокий',
-        'важную': 'высокий',
-        'важная': 'высокий',
-        'важное': 'высокий',
-        'важный': 'высокий',
-        'критично': 'высокий',
-        'критичную': 'высокий',
-        'критичная': 'высокий',
-        'критичное': 'высокий',
-        'критичный': 'высокий',
-        'неважно': 'низкий',
-        'неважную': 'низкий',
-        'неважная': 'низкий',
-        'некритично': 'низкий',
-        'некритичную': 'низкий',
-        'некритичная': 'низкий'
+        'срочн': 'высокий',      # срочно, срочная, срочную, срочный
+        'важн': 'высокий',       # важно, важная, важную, важный
+        'критичн': 'высокий',    # критично, критичная, критичную
+        'неважн': 'низкий',      # неважно, неважная, неважную
+        'некритичн': 'низкий'    # некритично, некритичная, некритичную
     }
     
     # Проверяем приоритет до любой обработки текста
     description_lower = description.lower()
     for keyword, level in priority_keywords.items():
-        if keyword.lower() in description_lower:
+        if any(word.startswith(keyword.lower()) for word in description_lower.split()):
             priority = level
             # Удаляем ключевое слово приоритета из текста
-            description = re.sub(f'\\b{keyword}\\b\\s*', '', description, flags=re.IGNORECASE)
+            description = re.sub(rf'\b\w*{keyword}\w*\b\s*', '', description, flags=re.IGNORECASE)
             break
 
     # Очищаем описание от лишних слов и символов
-    description = re.sub(r'^(тер[ар]а?|terra),?\s*', '', description, flags=re.IGNORECASE)
-    description = re.sub(r'^(создай|создать|добавь|добавить)\s+', '', description, flags=re.IGNORECASE)
-    description = re.sub(r'^\s*,\s*', '', description)  # Удаляем начальные запятые
+    description = re.sub(r'^(тер[ар]а?|terra)\s*[,]?\s*', '', description, flags=re.IGNORECASE)
+    description = re.sub(r'^(ты\s+)?(рас)?созда[йтьев]+\s*[,\s–-]*', '', description, flags=re.IGNORECASE)
+    description = re.sub(r'^(добав[иь]т?ь?|сдела[йть])\s*[,\s–-]*', '', description, flags=re.IGNORECASE)
+    description = re.sub(r'^[,\s–-]+', '', description)  # Удаляем начальные разделители
     description = description.strip()
     
     # Поиск даты в описании
