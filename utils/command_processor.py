@@ -10,46 +10,41 @@ def format_task_creation(description: str) -> str:
     if not description:
         return "Пожалуйста, укажите описание задачи"
     
+    # Начинаем с логирования исходного текста
     logger.info(f"Начало обработки задачи. Исходный текст: '{description}'")
     
-    # Проверяем наличие слов, указывающих на высокий приоритет
+    # Шаг 1: Определяем приоритет сразу, до любой обработки текста
     original_text = description.lower()
     priority_words = ['срочн', 'срочная', 'срочную', 'важн', 'важная', 'важную', 'критичн']
+    priority = 'высокий' if any(word in original_text for word in priority_words) else 'обычный'
+    logger.info(f"Определен приоритет: {priority}")
     
-    # Определяем приоритет
-    priority = 'обычный'
-    for word in priority_words:
-        if word in original_text:
-            priority = 'высокий'
-            logger.info(f"Установлен высокий приоритет из-за слова '{word}'")
-            break
-    
-    # Очищаем текст от служебных слов
+    # Шаг 2: Очищаем текст от служебных слов
     cleaners = [
-        (r'терра\s*[,]?\s*', ''),
-        (r'создай\s+', ''),
-        (r'создать\s+', ''),
-        (r'добавь\s+', ''),
-        (r'добавить\s+', ''),
-        (r'срочную?\s+', ''),
-        (r'важную?\s+', ''),
-        (r'критичную?\s+', ''),
-        (r'задачу\s+', ''),
-        (r'^[\s,\-–]+', ''),
-        (r'[\s,\-–]+$', '')
+        r'терра\s*[,]?\s*',
+        r'создай\s+',
+        r'создать\s+',
+        r'добавь\s+',
+        r'добавить\s+',
+        r'срочную?\s+',
+        r'важную?\s+',
+        r'критичную?\s+',
+        r'задачу\s+',
+        r'^[\s,\-–]+',
+        r'[\s,\-–]+$'
     ]
     
-    # Применяем очистку
-    for pattern, replacement in cleaners:
+    # Очищаем текст
+    for pattern in cleaners:
         old_text = description
-        description = re.sub(pattern, replacement, description, flags=re.IGNORECASE)
+        description = re.sub(pattern, '', description, flags=re.IGNORECASE)
         if old_text != description:
-            logger.info(f"Очистка текста: '{old_text}' -> '{description}'")
+            logger.info(f"Применен паттерн очистки: '{pattern}' -> '{description}'")
     
-    # Обрабатываем дату и время
+    # Шаг 3: Обработка даты и времени
     task_date = None
     
-    # Проверяем относительные даты
+    # Поиск даты
     date_words = {
         'завтра': timedelta(days=1),
         'послезавтра': timedelta(days=2),
@@ -58,15 +53,14 @@ def format_task_creation(description: str) -> str:
         'через месяц': timedelta(days=30)
     }
     
-    # Ищем дату
     for word, delta in date_words.items():
         if word in description.lower():
             task_date = datetime.now() + delta
             description = description.replace(word, '').strip()
-            logger.info(f"Установлена дата: {task_date} (слово: {word})")
+            logger.info(f"Найдена дата по слову '{word}': {task_date}")
             break
     
-    # Ищем время
+    # Поиск времени
     time_match = re.search(r'в\s+(\d{1,2})(?:[:.:](\d{2}))?\s*(?:час[оа]в?|час|ч)?', description)
     if time_match:
         hours = int(time_match.group(1))
@@ -81,13 +75,13 @@ def format_task_creation(description: str) -> str:
                     task_date += timedelta(days=1)
             
             description = re.sub(r'в\s+\d{1,2}(?:[:.:]?\d{2})?\s*(?:час[оа]в?|час|ч)?\s*', '', description)
-            logger.info(f"Установлено время: {hours}:{minutes:02d}")
+            logger.info(f"Найдено время: {hours}:{minutes:02d}")
     
-    # Финальная очистка описания
-    description = re.sub(r'\s+', ' ', description).strip()
+    # Шаг 4: Финальная очистка описания
+    description = ' '.join(word for word in description.split() if word)
     logger.info(f"Финальное описание: '{description}'")
     
-    # Формируем ответ
+    # Шаг 5: Формируем ответ
     response_parts = [
         "✅ Создаю новую задачу:\n",
         f"📝 Описание: {description.capitalize()}"
