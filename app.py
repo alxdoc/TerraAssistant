@@ -3,9 +3,9 @@ import logging
 import os
 import tempfile
 from openai import OpenAI
+from flask_cors import CORS
 from utils.nlp import DialogContext
 from utils.command_processor import process_command
-from flask_cors import CORS
 from models import init_db
 
 # Настройка логирования
