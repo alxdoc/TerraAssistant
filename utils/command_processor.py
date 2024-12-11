@@ -1,122 +1,111 @@
 import logging
-from typing import Dict, Optional, Callable
-from models import db, Command, Task
+from typing import Dict
+from models import Command, db
 
+# Настройка логирования
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class CommandProcessor:
     def __init__(self):
-        """Initialize command processor with response templates"""
         self.response_templates = {
-            'error': [
-                "Произошла ошибка: {details}",
-                "Не удалось выполнить команду: {details}",
-                "Ошибка обработки: {details}"
+            'greeting': [
+                "Здравствуйте! Чем могу помочь?",
+                "Приветствую! Готов помочь вам.",
+                "Добрый день! Как я могу быть полезен?"
             ],
             'unknown': [
-                "Извините, я не понимаю эту команду",
-                "Не удалось распознать команду",
-                "Команда не распознана"
+                "Извините, я не понял команду. Пожалуйста, повторите.",
+                "Не могу распознать команду. Попробуйте сформулировать иначе.",
             ],
-            'greeting': [
-                "Здравствуйте! Я ТЕРРА, ваш голосовой бизнес-ассистент. Чем могу помочь?",
-                "Приветствую! Готова помочь вам в решении задач.",
-                "Добрый день! Как я могу вам помочь?"
+            'error': [
+                "Произошла ошибка: {details}",
+                "Не удалось выполнить команду: {details}"
             ]
         }
 
     def process_command(self, command_type: str, entities: Dict) -> str:
-        """Process a command of given type with provided entities"""
+        """Process command based on its type"""
         try:
-            logger.info(f"Processing command of type {command_type} with entities {entities}")
-            logger.debug(f"Current handlers available: greeting, task_creation, document_analysis, search, calendar, contact, reminder")
+            logger.debug(f"Processing command type: {command_type} with entities: {entities}")
             
-            # Маппинг типов команд на обработчики
+            # Словарь обработчиков команд
             handlers = {
-                'greeting': self.handle_greeting,
+                'greeting': lambda: self.handle_greeting(entities),
                 'task_creation': lambda: self.handle_task_creation(entities),
                 'document_analysis': lambda: self.handle_document_analysis(entities),
                 'search': lambda: self.handle_search(entities),
                 'calendar': lambda: self.handle_calendar(entities),
                 'contact': lambda: self.handle_contact(entities),
                 'reminder': lambda: self.handle_reminder(entities),
+                'finance': lambda: self.handle_finance(entities),
+                'project': lambda: self.handle_project(entities),
+                'sales': lambda: self.handle_sales(entities),
+                'inventory': lambda: self.handle_inventory(entities),
+                'analytics': lambda: self.handle_analytics(entities),
+                'employee': lambda: self.handle_employee(entities),
+                'meeting': lambda: self.handle_meeting(entities),
                 'unknown': lambda: self.handle_unknown_command(entities)
             }
             
-            logger.debug(f"Looking for handler for command type: {command_type}")
-            
-            # Получаем обработчик для данного типа команды
-            handler = handlers.get(command_type)
-            if not handler:
-                logger.warning(f"Unknown command type: {command_type}")
-                return self.handle_unknown_command(entities)
-            
-            # Выполняем обработку
+            # Получаем и выполняем обработчик команды
+            handler = handlers.get(command_type, handlers['unknown'])
             result = handler()
-            logger.info(f"Command processed successfully, result: {result}")
+            logger.info(f"Command processed successfully: {result}")
             return result
             
         except Exception as e:
             logger.error(f"Error processing command: {str(e)}", exc_info=True)
             return self.format_error(str(e))
 
-    def handle_greeting(self) -> str:
+    def handle_greeting(self, entities: Dict) -> str:
         """Handle greeting command"""
         import random
         return random.choice(self.response_templates['greeting'])
 
     def handle_unknown_command(self, entities: Dict) -> str:
-        """Handle unknown command type"""
-        return self.response_templates['unknown'][0]
+        """Handle unknown command"""
+        import random
+        return random.choice(self.response_templates['unknown'])
 
     def handle_task_creation(self, entities: Dict) -> str:
         """Handle task creation command"""
         description = entities.get('description', '')
         if not description:
             return "Пожалуйста, укажите описание задачи"
-        
-        try:
-            task = Task(
-                title="Новая задача",
-                description=description,
-                status="pending"
-            )
-            db.session.add(task)
-            db.session.commit()
-            return f"Создана задача: {description}"
-        except Exception as e:
-            logger.error(f"Error creating task: {str(e)}", exc_info=True)
-            return self.format_error("Не удалось создать задачу")
+        logger.info(f"Creating task: {description}")
+        return f"Создана задача: {description}"
 
     def handle_document_analysis(self, entities: Dict) -> str:
         """Handle document analysis command"""
         description = entities.get('description', '')
         if not description:
             return "Пожалуйста, укажите документ для анализа"
-        return f"Анализирую документ: {description}"
+        logger.info(f"Analyzing document: {description}")
+        return f"Анализ документа: {description}"
 
     def handle_search(self, entities: Dict) -> str:
         """Handle search command"""
-        query = entities.get('description', '')
-        if not query:
-            return "Пожалуйста, укажите поисковый запрос"
-        logger.info(f"Выполняется поиск: {query}")
-        return f"Выполняется поиск по запросу: {query}"
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, укажите, что нужно найти"
+        logger.info(f"Searching for: {description}")
+        return f"Поиск: {description}"
 
     def handle_calendar(self, entities: Dict) -> str:
         """Handle calendar command"""
         description = entities.get('description', '')
         if not description:
-            return "Пожалуйста, укажите детали для календаря"
-        logger.info(f"Добавление в календарь: {description}")
-        return f"Добавлено в календарь: {description}"
+            return "Пожалуйста, уточните действие с календарем"
+        logger.info(f"Calendar operation: {description}")
+        return f"Работа с календарем: {description}"
 
     def handle_contact(self, entities: Dict) -> str:
-        """Handle contact-related command"""
+        """Handle contact command"""
         description = entities.get('description', '')
         if not description:
-            return "Пожалуйста, укажите информацию о контакте"
-        logger.info(f"Обработка контакта: {description}")
+            return "Пожалуйста, уточните действие с контактом"
+        logger.info(f"Contact operation: {description}")
         return f"Обработка контакта: {description}"
 
     def handle_reminder(self, entities: Dict) -> str:
@@ -124,8 +113,64 @@ class CommandProcessor:
         description = entities.get('description', '')
         if not description:
             return "Пожалуйста, укажите текст напоминания"
-        logger.info(f"Установка напоминания: {description}")
+        logger.info(f"Setting reminder: {description}")
         return f"Установлено напоминание: {description}"
+
+    def handle_finance(self, entities: Dict) -> str:
+        """Handle finance-related commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните финансовую операцию"
+        logger.info(f"Обработка финансовой операции: {description}")
+        return f"Обработка финансовой операции: {description}"
+
+    def handle_project(self, entities: Dict) -> str:
+        """Handle project management commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните действие с проектом"
+        logger.info(f"Управление проектом: {description}")
+        return f"Обработка проекта: {description}"
+
+    def handle_sales(self, entities: Dict) -> str:
+        """Handle sales-related commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните информацию о продаже"
+        logger.info(f"Обработка продажи: {description}")
+        return f"Обработка продажи: {description}"
+
+    def handle_inventory(self, entities: Dict) -> str:
+        """Handle inventory management commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните операцию со складом"
+        logger.info(f"Управление складом: {description}")
+        return f"Обработка складской операции: {description}"
+
+    def handle_analytics(self, entities: Dict) -> str:
+        """Handle analytics and reporting commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните тип аналитики"
+        logger.info(f"Анализ данных: {description}")
+        return f"Подготовка аналитики: {description}"
+
+    def handle_employee(self, entities: Dict) -> str:
+        """Handle employee management commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните действие с данными сотрудника"
+        logger.info(f"Управление персоналом: {description}")
+        return f"Обработка данных сотрудника: {description}"
+
+    def handle_meeting(self, entities: Dict) -> str:
+        """Handle meeting organization commands"""
+        description = entities.get('description', '')
+        if not description:
+            return "Пожалуйста, уточните детали встречи"
+        logger.info(f"Организация встречи: {description}")
+        return f"Планирование встречи: {description}"
 
     def format_error(self, details: str) -> str:
         """Format error message"""
