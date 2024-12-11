@@ -137,10 +137,22 @@ class DialogContext:
                 logger.info(f"Распознано приветствие: {text}")
                 return command_type, entities
             
-            # Приоритетные типы команд
-            priority_types = ['task_creation', 'meeting', 'reminder']
+            # Проверяем на создание задачи первым делом
+            task_patterns = self.command_patterns.get('task_creation', [])
+            for pattern in task_patterns:
+                if pattern.lower() in text:
+                    command_type = 'task_creation'
+                    # Извлекаем оставшуюся часть текста как описание
+                    description = text.replace(pattern.lower(), '').strip()
+                    if description:
+                        entities['description'] = description
+                    self.update_context(command_type)
+                    logger.info(f"Распознана команда создания задачи: {text}")
+                    logger.debug(f"Извлечено описание: {description}")
+                    return command_type, entities
             
-            # Сначала проверяем приоритетные типы команд
+            # Проверяем остальные приоритетные типы команд
+            priority_types = ['meeting', 'reminder']
             for priority_type in priority_types:
                 patterns = self.command_patterns.get(priority_type, [])
                 for pattern in patterns:
