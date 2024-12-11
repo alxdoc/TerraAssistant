@@ -13,31 +13,41 @@ def format_task_creation(description: str) -> str:
         
     # Определяем приоритет по ключевым словам в исходном тексте
     priority = 'обычный'
-    priority_keywords = {
-        'срочн': 'высокий',      # срочно, срочная, срочную, срочный
-        'важн': 'высокий',       # важно, важная, важную, важный
-        'критичн': 'высокий',    # критично, критичная, критичную
-        'неважн': 'низкий',      # неважно, неважная, неважную
-        'некритичн': 'низкий'    # некритично, некритичная, некритичную
-    }
+    priority_patterns = [
+        (r'\b(сроч|важн|критич)\w*\b', 'высокий'),
+        (r'\b(неважн|некритич)\w*\b', 'низкий')
+    ]
     
     # Проверяем приоритет до любой обработки текста
     description_lower = description.lower()
-    for keyword, level in priority_keywords.items():
-        if any(word.startswith(keyword.lower()) for word in description_lower.split()):
+    logger.debug(f"Проверка приоритета для текста: {description_lower}")
+    
+    for pattern, level in priority_patterns:
+        if re.search(pattern, description_lower):
             priority = level
+            logger.debug(f"Найден приоритет {level} по шаблону {pattern}")
+            # Удаляем слова о приоритете и слово "задача" после них
+            description = re.sub(pattern + r'\s*(задач[ауи]?)?\s*', '', description, flags=re.IGNORECASE)
             break
-
-    # Сначала удаляем слова о приоритете, сохраняя их значение
-    for keyword in priority_keywords:
-        description = re.sub(rf'\b\w*{keyword}\w*\b\s*(задач[ау]?)?\s*', '', description, flags=re.IGNORECASE)
     
     # Затем очищаем описание от лишних слов и символов
-    description = re.sub(r'^(тер[ар]а?|terra)\s*[,]?\s*', '', description, flags=re.IGNORECASE)
-    description = re.sub(r'^(ты\s+)?(рас)?созда[йтьев]+\s*[,\s–-]*', '', description, flags=re.IGNORECASE)
-    description = re.sub(r'^(добав[иь]т?ь?|сдела[йть])\s*[,\s–-]*', '', description, flags=re.IGNORECASE)
-    description = re.sub(r'^[,\s–-]+', '', description)  # Удаляем начальные разделители
-    description = re.sub(r'\s+', ' ', description)  # Нормализуем пробелы
+    logger.debug(f"Описание до очистки: {description}")
+    
+    # Очищаем ключевые слова и служебные символы
+    cleaners = [
+        (r'^(тер[ар]а?|terra)\s*[,]?\s*', ''),  # Удаляем имя ассистента
+        (r'^(ты\s+)?((рас)?созда[йтьев]+|добав[иь]т?ь?|сдела[йть])\s*[,\s–-]*', ''),  # Удаляем команды создания
+        (r'^[,\s–-]+', ''),  # Удаляем начальные разделители
+        (r'\s+', ' ')  # Нормализуем пробелы
+    ]
+    
+    for pattern, replacement in cleaners:
+        old_desc = description
+        description = re.sub(pattern, replacement, description, flags=re.IGNORECASE)
+        if old_desc != description:
+            logger.debug(f"Применен паттерн {pattern}: {old_desc} -> {description}")
+            
+    description = description.strip()
     description = description.strip()
     
     # Поиск даты в описании
