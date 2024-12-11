@@ -19,4 +19,5 @@ dependencies = [
     "nltk>=3.9.1",
     "python-dotenv",
     "click>=8.1.7",
+    "openai>=1.57.2",
 ]

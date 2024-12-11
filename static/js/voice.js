@@ -4,31 +4,26 @@ class VoiceAssistant {
         console.log('Initializing voice assistant...');
         this.isListening = false;
         this.hasPermission = false;
+        this.mediaRecorder = null;
+        this.audioChunks = [];
         
         try {
-            // Проверяем поддержку Web Speech API
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                console.error('Speech Recognition API не поддерживается');
-                throw new Error('Speech Recognition API не поддерживается в этом браузере');
+            // Проверяем поддержку MediaRecorder API
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('MediaRecorder API не поддерживается');
+                throw new Error('MediaRecorder API не поддерживается в этом браузере');
             }
             
-            console.log('Speech Recognition API поддерживается, инициализация...');
+            console.log('MediaRecorder API поддерживается, инициализация...');
             
-            // Создаем экземпляр распознавания речи
-            this.recognition = new SpeechRecognition();
+            this.initialize();
             
-            if (!this.recognition) {
-                throw new Error('Не удалось создать экземпляр распознавания речи');
-            }
-            
-            console.log('Recognition instance created successfully');
-            
-            // Настраиваем параметры
-            this.recognition.lang = 'ru-RU';
-            this.recognition.continuous = false;
-            this.recognition.interimResults = false;
-            this.recognition.maxAlternatives = 1;
+        } catch (error) {
+            console.error('Constructor error:', error);
+            this.updateStatus('Ошибка инициализации: ' + error.message, 'error');
+            this.disableButtons();
+        }
+    }
             
             // Логируем конфигурацию
             console.log('Recognition configured with params:', {
@@ -115,127 +110,80 @@ class VoiceAssistant {
         }
     }
 
-    setupRecognition() {
-        this.recognition.onstart = () => {
-            console.log('Recognition started');
-            this.isListening = true;
-            this.updateStatus('Слушаю...', 'listening');
-            
-            const startBtn = document.getElementById('startBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            
-            if (startBtn && stopBtn) {
-                startBtn.classList.add('listening');
-                stopBtn.disabled = false;
-            }
-        };
-
-        this.recognition.onend = () => {
-            console.log('Recognition ended');
-            this.isListening = false;
-            
-            const startBtn = document.getElementById('startBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            
-            if (startBtn && stopBtn) {
-                startBtn.classList.remove('listening');
-                startBtn.disabled = false;
-                stopBtn.disabled = true;
-            }
-            
-            if (!this.hasPermission) {
-                this.updateStatus('Нет доступа к микрофону', 'error');
-            } else {
-                this.updateStatus('Готов к работе', 'ready');
-            }
-        };
-
-        this.recognition.onresult = (event) => {
-            try {
-                console.log('Got recognition result:', event);
-                
-                if (event.results && event.results.length > 0) {
-                    const result = event.results[event.results.length - 1];
-                    
-                    if (result.isFinal) {
-                        const text = result[0].transcript.trim();
-                        console.log('Recognized final text:', text);
-                        
-                        this.updateStatus('Текст распознан: ' + text, 'processing');
-                        
-                        if (text) {
-                            // Показываем пользователю что текст распознан
-                            this.displayResult({
-                                command_type: 'info',
-                                result: `Распознанный текст: ${text}`
-                            });
-                            
-                            // Проверяем наличие ключевого слова
-                            const terraRegex = /терра|terra/i;
-                            if (terraRegex.test(text)) {
-                                const command = text.replace(terraRegex, '').trim();
-                                if (command) {
-                                    this.processVoiceInput(text);
-                                } else {
-                                    this.updateStatus('Ожидание команды после слова "ТЕРРА"', 'ready');
-                                }
-                            } else {
-                                this.updateStatus('Ожидание команды со словом "ТЕРРА"', 'ready');
-                            }
-                        }
-                    }
+    async setupMediaRecorder() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
                 }
-            } catch (error) {
-                console.error('Error processing recognition result:', error);
-                this.updateStatus('Ошибка обработки распознанной речи', 'error');
-            }
-        };
+            });
+            
+            this.mediaRecorder = new MediaRecorder(stream);
+            
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.audioChunks.push(event.data);
+                }
+            };
+            
+            this.mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                this.audioChunks = [];
+                
+                this.updateStatus('Обработка аудио...', 'processing');
+                await this.sendAudioToServer(audioBlob);
+            };
+            
+            this.hasPermission = true;
+            this.updateStatus('Готов к работе', 'ready');
+            
+        } catch (error) {
+            console.error('MediaRecorder setup error:', error);
+            this.hasPermission = false;
+            this.updateStatus('Ошибка доступа к микрофону: ' + error.message, 'error');
+            throw error;
+        }
+    }
 
-        this.recognition.onerror = (event) => {
-            console.error('Recognition error:', event.error);
-            this.isListening = false;
+    async sendAudioToServer(audioBlob) {
+        try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
             
-            let errorMessage = 'Ошибка распознавания речи';
+            const response = await fetch('/process_audio', {
+                method: 'POST',
+                body: formData
+            });
             
-            switch(event.error) {
-                case 'not-allowed':
-                    this.hasPermission = false;
-                    errorMessage = 'Нет доступа к микрофону';
-                    break;
-                case 'no-speech':
-                    errorMessage = 'Речь не обнаружена';
-                    break;
-                case 'network':
-                    errorMessage = 'Проблема с сетью';
-                    break;
-                default:
-                    errorMessage = `Ошибка: ${event.error}`;
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            this.updateStatus(errorMessage, 'error');
+            const result = await response.json();
+            this.displayResult(result);
             
-            const startBtn = document.getElementById('startBtn');
-            if (startBtn) {
-                startBtn.classList.remove('listening');
-            }
-            
-            const stopBtn = document.getElementById('stopBtn');
-            if (stopBtn) {
-                stopBtn.disabled = true;
-            }
-        };
+        } catch (error) {
+            console.error('Error sending audio:', error);
+            this.updateStatus('Ошибка отправки аудио: ' + error.message, 'error');
+            this.displayResult({
+                command_type: 'error',
+                result: `Ошибка обработки аудио: ${error.message}`
+            });
+        }
     }
 
     async start() {
-        console.log('Starting recognition...');
+        console.log('Starting recording...');
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         
         try {
-            this.updateStatus('Запуск распознавания...', 'processing');
+            this.updateStatus('Запуск записи...', 'processing');
             
-            if (!this.hasPermission) {
-                await this.checkMicrophonePermission();
+            if (!this.hasPermission || !this.mediaRecorder) {
+                await this.setupMediaRecorder();
             }
             
             if (this.isListening) {
@@ -243,17 +191,18 @@ class VoiceAssistant {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             
-            await this.recognition.start();
+            this.audioChunks = [];
+            this.mediaRecorder.start();
             
             startBtn.disabled = true;
             stopBtn.disabled = false;
             startBtn.classList.add('listening');
             
             this.isListening = true;
-            this.updateStatus('Слушаю...', 'listening');
+            this.updateStatus('Запись...', 'listening');
             
         } catch (error) {
-            console.error('Error starting recognition:', error);
+            console.error('Error starting recording:', error);
             this.updateStatus('Ошибка запуска: ' + error.message, 'error');
             
             startBtn.disabled = false;
@@ -262,17 +211,17 @@ class VoiceAssistant {
             
             this.displayResult({
                 command_type: 'error',
-                result: `Ошибка запуска распознавания: ${error.message}`
+                result: `Ошибка запуска записи: ${error.message}`
             });
         }
     }
 
     stop() {
-        console.log('Stopping recognition...');
-        if (this.isListening && this.recognition) {
+        console.log('Stopping recording...');
+        if (this.isListening && this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
             try {
-                this.recognition.stop();
-                console.log('Recognition stopped successfully');
+                this.mediaRecorder.stop();
+                console.log('Recording stopped successfully');
                 
                 const startBtn = document.getElementById('startBtn');
                 const stopBtn = document.getElementById('stopBtn');
@@ -284,10 +233,10 @@ class VoiceAssistant {
                 }
                 
                 this.isListening = false;
-                this.updateStatus('Готов к работе', 'ready');
+                this.updateStatus('Обработка записи...', 'processing');
             } catch (error) {
-                console.error('Error stopping recognition:', error);
-                this.updateStatus('Ошибка при остановке распознавания', 'error');
+                console.error('Error stopping recording:', error);
+                this.updateStatus('Ошибка при остановке записи', 'error');
             }
         }
     }
